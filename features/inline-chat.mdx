@@ -1,0 +1,101 @@
+---
+title: "Inline chat"
+description: "Make targeted AI-assisted edits directly in the editor without leaving your code."
+---
+
+Inline chat lets you send a natural language request to Copilot and see the resulting edits applied directly in your code, right where you are working. Unlike the chat panel, which is a separate sidebar, inline chat opens as a small input prompt overlaid on the editor. The suggested change appears as a diff in place, and you can accept or reject it without switching context.
+
+## Opening inline chat
+
+Press `Ctrl+I` on Windows and Linux, or `Cmd+I` on macOS, while your cursor is in the editor. The inline chat input opens at your cursor position.
+
+You can also open inline chat from the right-click context menu: select text, right-click, and choose **Copilot > Start Inline Chat**.
+
+<Tip>
+  Select the code you want to change *before* opening inline chat. Copilot uses the selection as context for the request, which produces more accurate and targeted edits than starting from an unselected cursor position.
+</Tip>
+
+## Making a request
+
+<Steps>
+  <Step title="Select relevant code (optional but recommended)">
+    Highlight the function, block, or lines you want to modify. If nothing is selected, Copilot uses the surrounding code and the current file as context.
+  </Step>
+  <Step title="Open the inline chat prompt">
+    Press `Ctrl+I` / `Cmd+I`. A text input appears in the editor.
+  </Step>
+  <Step title="Describe the change">
+    Type a concise instruction, for example: "Add null checks for all parameters" or "Convert this callback to async/await." Press `Enter` to submit.
+  </Step>
+  <Step title="Review the diff">
+    Copilot renders the proposed changes as a green/red inline diff. Read through the diff to verify the edit is correct.
+  </Step>
+  <Step title="Accept or reject">
+    Press `Ctrl+Enter` / `Cmd+Enter` to accept, or `Escape` to reject and discard the suggestion. You can also click the **Accept** or **Discard** buttons in the inline toolbar.
+  </Step>
+</Steps>
+
+## Common use cases
+
+<AccordionGroup>
+  <Accordion title="Refactoring a function">
+    Select the entire function, open inline chat, and describe the refactoring goal:
+
+    ```
+    Extract the validation logic into a separate function called validateInput
+    ```
+
+    Copilot rewrites the selected code and adds the new function below, showing the full diff before you commit.
+  </Accordion>
+  <Accordion title="Adding error handling">
+    Select a block that makes network or I/O calls and ask:
+
+    ```
+    Wrap this in a try/catch block and log the error with the existing logger
+    ```
+
+    Copilot wraps the selection and infers the correct logger from the surrounding code context.
+  </Accordion>
+  <Accordion title="Explaining selected code">
+    Select a complex expression or algorithm and ask:
+
+    ```
+    Explain what this regex does and add an inline comment
+    ```
+
+    Copilot adds an explanatory comment directly above the selected code.
+  </Accordion>
+  <Accordion title="Generating tests">
+    Select a function and ask:
+
+    ```
+    Write unit tests for this function covering edge cases
+    ```
+
+    Copilot generates a test block in the same file or suggests placing it in a test file, depending on your project structure.
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard shortcuts
+
+| Action | Windows / Linux | macOS |
+|---|---|---|
+| Open inline chat | `Ctrl+I` | `Cmd+I` |
+| Submit request | `Enter` | `Enter` |
+| Accept change | `Ctrl+Enter` | `Cmd+Enter` |
+| Reject / close | `Escape` | `Escape` |
+| Show previous request | `Alt+Up` | `Option+Up` |
+| Show next request | `Alt+Down` | `Option+Down` |
+
+## Inline chat vs. the chat panel
+
+Both tools use the same underlying model, but they serve different purposes:
+
+| | Inline chat | Chat panel |
+|---|---|---|
+| **Scope** | Targeted — affects the selected code or immediate surroundings | Broad — can span the whole codebase |
+| **Context** | The current file and selection | Files, symbols, `#` references, `@` participants |
+| **Output** | Diff applied in the editor | Text, code blocks, and proposed edits in a sidebar |
+| **Best for** | Quick, precise edits to specific code | Exploration, planning, and multi-file changes |
+
+Use inline chat when you know exactly which code to change and want to stay focused in the editor. Use the chat panel when you need to explore, ask questions, or make changes that touch multiple files. For large autonomous tasks, use [Agent mode](/features/agent-mode).

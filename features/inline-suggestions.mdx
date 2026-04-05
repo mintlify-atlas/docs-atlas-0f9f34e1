@@ -1,0 +1,83 @@
+---
+title: "Inline suggestions"
+description: "Get real-time ghost text completions and next-edit suggestions as you type."
+---
+
+Inline suggestions are real-time code completions that appear directly in your editor as you type. Copilot analyzes the code around your cursor — the current file, open tabs, and related symbols — and renders a suggestion as dimmed ghost text. You can accept the suggestion instantly or keep typing to dismiss it.
+
+## Accepting and dismissing suggestions
+
+When a suggestion appears, you have several options:
+
+| Action | Windows / Linux | macOS |
+|---|---|---|
+| Accept the full suggestion | `Tab` | `Tab` |
+| Dismiss the suggestion | `Escape` | `Escape` |
+| Accept the next word only | `Ctrl+Right` | `Cmd+Right` |
+| Show the next suggestion | `Alt+]` | `Option+]` |
+| Show the previous suggestion | `Alt+[` | `Option+[` |
+| Trigger suggestions manually | `Alt+\` | `Option+\` |
+
+<Tip>
+  If a suggestion is not quite right, accept just the first word or line with `Ctrl+Right` / `Cmd+Right`, then keep typing. Copilot will update its prediction based on what you add.
+</Tip>
+
+## Next Edit Suggestions
+
+Next Edit Suggestions (NES) go beyond completing the code at your cursor. Instead of only predicting what comes next in a linear sense, NES predicts *where* your next edit should happen and *what* it should be — even if that location is somewhere else in the file.
+
+**How NES works:**
+
+- After you make an edit, Copilot analyzes the surrounding code for logical follow-on changes.
+- A suggestion arrow appears in the gutter indicating there is a related edit elsewhere in the file.
+- Press `Tab` to jump to that location and preview the suggested change.
+- Accept with `Tab` again or dismiss with `Escape`.
+
+**Common scenarios where NES activates:**
+
+- You rename a variable — NES suggests updating all other references in the file.
+- You add a new parameter to a function — NES suggests updating call sites.
+- You change a return type — NES suggests updating the places that consume the returned value.
+
+<Note>
+  Next Edit Suggestions are enabled by default. You can toggle them with the `github.copilot.nextEditSuggestions.enabled` setting in your VS Code settings, or by running **Preferences: Open Settings (UI)** and searching for `nextEditSuggestions`.
+</Note>
+
+## Enabling and disabling suggestions per language
+
+You can turn inline suggestions on or off for specific languages without affecting the rest of your workflow. Add the following to your `settings.json`:
+
+```json
+"github.copilot.enable": {
+  "*": true,
+  "markdown": false,
+  "plaintext": false,
+  "yaml": false
+}
+```
+
+The `"*"` key sets the default for all languages. Setting a language to `false` disables both ghost text completions and Next Edit Suggestions for that file type.
+
+To open `settings.json` directly, run **Preferences: Open User Settings (JSON)** from the Command Palette.
+
+<Tip>
+  Write a descriptive comment before a new function or block of code. Copilot uses the comment as a strong signal for what to generate. A comment like `// Parse ISO 8601 date string and return a Date object, throwing on invalid input` often produces better completions than starting to type the function body directly.
+</Tip>
+
+## Keyboard shortcuts reference
+
+| Action | Windows / Linux | macOS |
+|---|---|---|
+| Accept full suggestion | `Tab` | `Tab` |
+| Accept next word | `Ctrl+Right` | `Cmd+Right` |
+| Dismiss suggestion | `Escape` | `Escape` |
+| Next suggestion | `Alt+]` | `Option+]` |
+| Previous suggestion | `Alt+[` | `Option+[` |
+| Trigger suggestion manually | `Alt+\` | `Option+\` |
+| Open completions panel | `Ctrl+Enter` | `Ctrl+Enter` |
+
+The completions panel (`Ctrl+Enter`) opens a side-by-side view showing up to ten alternative suggestions at once, which is useful when you want to compare options before accepting one.
+
+<Note>
+  The GitHub Copilot Free plan includes a monthly quota of completions. The status bar icon shows a warning when you are approaching the limit. Upgrading to a paid plan removes the quota. Enterprise plans may have organization-level policies that affect availability.
+</Note>

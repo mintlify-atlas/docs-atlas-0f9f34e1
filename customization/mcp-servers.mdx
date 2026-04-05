@@ -1,0 +1,211 @@
+---
+title: "MCP servers"
+description: "Connect Model Context Protocol servers to give Copilot access to external tools and data sources."
+---
+
+Model Context Protocol (MCP) is an open standard that defines how AI assistants communicate with external tools and data sources. By connecting an MCP server to Copilot, you give the agent access to capabilities that go well beyond what is built into VS Code — things like querying a live database, browsing the web, calling a proprietary API, or reading from a shared file system.
+
+## Why use MCP servers
+
+Copilot's built-in tools cover common development tasks: reading and editing files, running terminal commands, and searching your workspace. MCP servers extend this set with custom tools that are specific to your workflow or organization.
+
+<CardGroup cols={2}>
+  <Card title="External data sources" icon="database">
+    Query databases, vector stores, or internal knowledge bases directly from the chat panel.
+  </Card>
+  <Card title="Third-party APIs" icon="plug">
+    Let Copilot call REST or GraphQL APIs on your behalf — useful for fetching issue data, deployment status, or analytics.
+  </Card>
+  <Card title="File systems and storage" icon="folder">
+    Give Copilot read and write access to paths outside the current workspace, including network shares or cloud storage.
+  </Card>
+  <Card title="Web and search" icon="globe">
+    Connect a web search or scraping tool so Copilot can retrieve up-to-date information during a session.
+  </Card>
+</CardGroup>
+
+## Adding an MCP server
+
+MCP servers are configured using VS Code's built-in MCP support. You can add them to your User Settings (JSON) under the `mcp.servers` key, or to a `.vscode/mcp.json` file for workspace-scoped configuration that you can share with your team.
+
+<Steps>
+  <Step title="Open your settings file">
+    For user-level configuration, open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run **Preferences: Open User Settings (JSON)**.
+
+    For workspace-level configuration (shareable with teammates), create or open `.vscode/mcp.json` at the root of your project. Note: the `mcp` key is not needed in `.vscode/mcp.json` — use `servers` directly.
+  </Step>
+  <Step title="Add the server configuration">
+    **User Settings (JSON):**
+    ```json
+    {
+      "mcp": {
+        "servers": {
+          "my-server": {
+            "command": "npx",
+            "args": ["-y", "@myorg/my-mcp-server"],
+            "env": {
+              "API_KEY": "your-key"
+            }
+          }
+        }
+      }
+    }
+    ```
+
+    **`.vscode/mcp.json` (workspace-scoped):**
+    ```json
+    {
+      "servers": {
+        "my-server": {
+          "command": "npx",
+          "args": ["-y", "@myorg/my-mcp-server"],
+          "env": {
+            "API_KEY": "your-key"
+          }
+        }
+      }
+    }
+    ```
+  </Step>
+  <Step title="Reload or restart VS Code">
+    Copilot discovers MCP servers on startup. After saving your settings, reload the window (`Ctrl+Shift+P` → **Developer: Reload Window**) to connect the server.
+  </Step>
+</Steps>
+
+## Transport types
+
+MCP servers communicate with the host using one of two transports.
+
+<Tabs>
+  <Tab title="stdio">
+    The most common transport. VS Code launches the server as a child process and communicates over standard input/output. Use this for locally installed servers.
+
+    ```json
+    {
+      "mcp": {
+        "servers": {
+          "filesystem": {
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/directory"]
+          }
+        }
+      }
+    }
+    ```
+
+    The `command` field is the executable (e.g., `npx`, `python`, `node`) and `args` are passed directly to it.
+  </Tab>
+  <Tab title="SSE / HTTP">
+    Server-Sent Events or Streamable HTTP transport connects to a remote MCP server over HTTP. Use this when the server is hosted separately rather than run locally.
+
+    ```json
+    {
+      "mcp": {
+        "servers": {
+          "remote-server": {
+            "url": "https://mcp.example.com/sse",
+            "headers": {
+              "Authorization": "Bearer your-token"
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Viewing connected servers and tools
+
+Once a server is connected, you can see which tools it exposes directly from the chat panel.
+
+1. Open the Copilot Chat panel.
+2. Switch to **agent mode** using the mode selector at the bottom of the input box.
+3. Click the **tools icon** (wrench) to open the tool picker. MCP server tools appear alongside built-in tools and can be enabled or disabled individually.
+
+You can also inspect the MCP server's status in the **Output** panel by selecting **GitHub Copilot Chat MCP** from the channel dropdown.
+
+## Using MCP tools in agent mode
+
+MCP tools are available automatically when agent mode is active. Copilot selects the appropriate tool based on your prompt. You can also reference a specific tool explicitly by typing `#toolName` in your chat message to attach it as context.
+
+<Note>
+  MCP tools are only available in agent mode. If you are in ask or edit mode, switch to agent mode to use tools contributed by MCP servers.
+</Note>
+
+## Common MCP servers
+
+<AccordionGroup>
+  <Accordion title="Filesystem">
+    Gives Copilot access to a directory on your machine, useful for reading configuration files or project assets that live outside the workspace.
+
+    In `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "filesystem": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/you/Documents"]
+        }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="GitHub">
+    Lets Copilot read and create issues, pull requests, and repository metadata using the GitHub API.
+
+    In `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "github": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-github"],
+          "env": {
+            "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_..."
+          }
+        }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Web search">
+    Provides a search tool so Copilot can retrieve current information from the web during a session.
+
+    In `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "web-search": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+          "env": {
+            "BRAVE_API_KEY": "your-key"
+          }
+        }
+      }
+    }
+    ```
+  </Accordion>
+  <Accordion title="Databases">
+    Connect to a PostgreSQL, SQLite, or other database so Copilot can inspect schemas and run read-only queries.
+
+    In `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "postgres": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/mydb"]
+        }
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Security considerations
+
+<Warning>
+  Only connect MCP servers from sources you trust. When a server is connected, Copilot can invoke any tool it exposes — including tools that read files, make network requests, or execute code. Review the server's source code or documentation before connecting it, and prefer servers published by reputable organizations. Avoid putting secrets directly in `settings.json`; use environment variable references or a secrets manager where possible.
+</Warning>

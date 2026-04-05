@@ -1,0 +1,130 @@
+---
+title: "Model-specific tools"
+description: "Override tool behavior for specific AI models using model-specific tool registrations."
+---
+
+Model-specific tools let you provide tool implementations that are only available when a particular language model is active. Standard tools are registered once and exposed to all models; model-specific tools are registered with a model selector, so they only appear — or replace an existing tool — when the active model matches.
+
+This page is aimed at developers contributing tools to the `vscode-copilot-chat` extension or building extensions that integrate with Copilot's tool system.
+
+## When to use model-specific tools
+
+Use model-specific tools when:
+
+- A model has native capabilities that a specialized tool can expose more effectively (for example, a model with built-in grounding or retrieval features).
+- You want to adjust a tool's description or input schema to produce better results with a specific model family, without changing behavior for other models.
+- You need to override an existing built-in tool's behavior for certain models while keeping the original behavior intact for all others.
+
+<Note>
+If your tool works well for all models, register it as a normal tool using `ToolRegistry.registerTool`. Model-specific registration adds complexity that is only justified when behavior genuinely needs to differ per model.
+</Note>
+
+## Registering a model-specific tool
+
+Use `ToolRegistry.registerModelSpecificTool` to register a tool tied to one or more model families. Pass the tool metadata (name, display name, description, input schema, and model selector) along with the tool class.
+
+```typescript
+class MyGeminiTool implements ICopilotModelSpecificTool<IMyToolInput> {
+  async invoke(
+    options: vscode.LanguageModelToolInvocationOptions<IMyToolInput>,
+    token: vscode.CancellationToken
+  ): Promise<vscode.LanguageModelToolResult> {
+    // Gemini-specific implementation
+    return { content: [{ type: 'text', value: 'Result' }] };
+  }
+}
+
+const disposable = ToolRegistry.registerModelSpecificTool(
+  {
+    name: 'my_gemini_tool',
+    displayName: 'My Gemini Tool',
+    description: 'A tool optimized for Gemini models',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The query to process' }
+      },
+      required: ['query']
+    },
+    models: [{ family: 'gemini-3-pro' }]
+  },
+  MyGeminiTool
+);
+```
+
+The `models` array accepts model selector objects. The tool is only made available to the AI model when the active language model matches one of the selectors you provide.
+
+Store the returned `disposable` and call `disposable.dispose()` when the tool is no longer needed — for example, when your extension deactivates.
+
+## The `overridesTool` property
+
+If your model-specific tool should **replace** an existing tool for certain models rather than add a new one alongside it, set the `overridesTool` property on your tool class. Its value must be the `ToolName` of the existing tool to replace.
+
+```typescript
+class MyGeminiSearchTool extends GenericGrepSearchTool {
+  public readonly overridesTool = ToolName.GrepSearch;
+
+  // Gemini-optimized search implementation that replaces the generic one
+  async invoke(
+    options: vscode.LanguageModelToolInvocationOptions<IGrepSearchInput>,
+    token: vscode.CancellationToken
+  ): Promise<vscode.LanguageModelToolResult> {
+    // custom implementation
+  }
+}
+
+ToolRegistry.registerModelSpecificTool(
+  {
+    name: 'gemini_grep_search',
+    displayName: 'Search (Gemini)',
+    description: 'Optimized grep search for Gemini',
+    models: [{ family: 'gemini' }],
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pattern: { type: 'string', description: 'The pattern to search for' },
+        path: { type: 'string', description: 'Directory to search in' }
+      },
+      required: ['pattern']
+    }
+  },
+  MyGeminiSearchTool
+);
+```
+
+When `overridesTool` is set, the following rules apply:
+
+<Steps>
+  <Step title="The base tool must be enabled">
+    The override only takes effect if the base tool (identified by `overridesTool`) is registered and currently enabled. If the base tool is disabled in the tool picker, the override is also inactive.
+  </Step>
+  <Step title="The override is not individually selectable">
+    Model-specific tools that override an existing tool do not appear as separate entries in the tool picker UI. Users interact with the base tool entry; the override is applied automatically when the model matches.
+  </Step>
+  <Step title="The base tool is replaced, not supplemented">
+    When the active model matches the selector and the base tool is enabled, the model receives only the override tool — not both. The base tool's registration is effectively hidden from that model.
+  </Step>
+</Steps>
+
+## When not to use model-specific tools
+
+<AccordionGroup>
+  <Accordion title="The behavior is the same across models">
+    If your tool works correctly and produces good results with all available models, register it as a standard tool. Model-specific registration adds maintenance overhead — you end up with multiple implementations to keep in sync.
+  </Accordion>
+  <Accordion title="You only want to change wording">
+    Small differences in tool descriptions rarely justify a full model-specific registration. Instead, write a `modelDescription` that is clear and accurate enough to work across models. Reserve overrides for cases where the schema or behavior genuinely needs to differ.
+  </Accordion>
+  <Accordion title="You want the tool to appear in the tool picker">
+    Model-specific tools that use `overridesTool` are not individually selectable in the VS Code tool picker UI. If you need users to be able to enable or disable the tool independently, register it as a normal tool instead.
+  </Accordion>
+</AccordionGroup>
+
+## Implementation checklist
+
+When building a model-specific tool, follow the same guidelines as any other tool:
+
+- Match the TypeScript interface for your input type exactly to the `inputSchema` you declare, including which properties are `required`.
+- Implement `PreparedToolInvocation.invocationMessage` and `pastTenseMessage` so users can follow along in the chat UI.
+- If the tool has side effects that can't be undone, return `PreparedToolInvocation.confirmationMessages` to prompt the user for approval before proceeding.
+- Test your tool with the target model and read the full prompt to verify the result is formatted consistently with other tool results in the conversation.

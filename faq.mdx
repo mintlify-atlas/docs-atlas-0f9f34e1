@@ -1,0 +1,196 @@
+---
+title: "FAQ"
+description: "Answers to common questions about GitHub Copilot Chat in VS Code."
+---
+
+<AccordionGroup>
+  <Accordion title="What is the difference between GitHub Copilot and GitHub Copilot Chat?">
+    GitHub Copilot is the umbrella product that includes two distinct interaction modes:
+
+    - **Inline completions** — ghost text and next-edit suggestions that appear as you type, which you accept with `Tab`. These require no conversation; Copilot infers intent from the code around your cursor.
+    - **GitHub Copilot Chat** — the conversational interface built into VS Code. It includes the Chat panel (a persistent conversation sidebar), inline chat (`Ctrl+I` / `Cmd+I` for targeted edits inside the editor), and agent mode for autonomous multi-step tasks.
+
+    Both modes are included in a single extension (`GitHub.copilot-chat`) and a single subscription. "GitHub Copilot Chat" specifically refers to the chat and agent capabilities, while "GitHub Copilot" is sometimes used to refer to the full product including completions.
+  </Accordion>
+
+  <Accordion title="Which VS Code version do I need?">
+    GitHub Copilot Chat requires **VS Code 1.115.0 or later**. The extension releases in lockstep with VS Code, meaning each new version of Copilot Chat is designed for the corresponding latest VS Code release.
+
+    If you are on an older version of VS Code, you will not be able to install or use the latest Copilot Chat release. Update VS Code via **Help > Check for Updates** or download the latest version from [code.visualstudio.com](https://code.visualstudio.com).
+
+    <Tip>
+      Enable automatic VS Code updates to stay current. On macOS, go to **Code > Settings > Turn on Automatic Updates**. On Windows and Linux, use **Help > Check for Updates** and opt in to automatic downloads.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="What GitHub Copilot plan do I need?">
+    GitHub Copilot Chat is available on all Copilot plans:
+
+    | Plan | Chat messages | Code completions | Agent mode |
+    |------|--------------|-----------------|------------|
+    | **Free** | 50 per month | 2,000 per month | Included |
+    | **Pro** | Unlimited | Unlimited | Included |
+    | **Business** | Unlimited | Unlimited | Included |
+    | **Enterprise** | Unlimited | Unlimited | Included + cloud agents |
+
+    The Free plan resets monthly and is sufficient for light personal use. Pro, Business, and Enterprise plans provide unlimited usage along with additional features and admin controls. See [github.com/features/copilot](https://github.com/features/copilot) for a full plan comparison.
+  </Accordion>
+
+  <Accordion title="How do I get GitHub Copilot Free?">
+    GitHub Copilot Free is available to any GitHub account holder at no cost.
+
+    <Steps>
+      <Step title="Go to Copilot settings">
+        Navigate to [github.com/settings/copilot](https://github.com/settings/copilot) while signed in to your GitHub account.
+      </Step>
+      <Step title="Activate the Free plan">
+        Click **Start using Copilot for free**. No credit card is required.
+      </Step>
+      <Step title="Install the extension in VS Code">
+        Search for **GitHub Copilot Chat** in the VS Code Extensions Marketplace (extension ID: `GitHub.copilot-chat`) and install it.
+      </Step>
+      <Step title="Sign in">
+        VS Code will prompt you to sign in with your GitHub account. Approve the authorisation in your browser. Copilot will activate automatically once signed in.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="Which AI models can I use?">
+    GitHub Copilot Chat supports multiple AI models, and the available selection depends on your subscription:
+
+    - **Free plan** — access to a curated set of models, including capable base models for chat and completions.
+    - **Pro, Business, Enterprise** — access to a broader set of models, including the latest frontier models as they are added to the Copilot service.
+
+    You can switch models from the model picker in the Chat panel. Only the latest version of the Copilot Chat extension supports the newest models — even minor model upgrades require prompt changes in the extension, so older extension versions cannot use newer models.
+
+    <Note>
+      Model availability is controlled by the Copilot service and changes over time as GitHub adds new providers and versions. Check the [Copilot documentation](https://docs.github.com/en/copilot) for the current list of supported models for your plan.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Why is Copilot Chat not available after updating VS Code?">
+    Copilot Chat releases in lockstep with VS Code because the extension relies on deep VS Code UI integration that changes with each release. Every new Copilot Chat version is only compatible with the latest VS Code release.
+
+    If you updated VS Code but Copilot Chat appears broken or unavailable, the most likely cause is that the extension has not yet updated to match. To fix this:
+
+    1. Open the Extensions panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+    2. Search for **GitHub Copilot Chat** and click **Update** if an update is available.
+    3. Reload VS Code after the update completes.
+
+    If no update is available yet, the new extension version may still be in the process of publishing. Wait a short time and check again.
+  </Accordion>
+
+  <Accordion title="How do I disable Copilot suggestions for a specific language?">
+    You can enable or disable Copilot inline completions on a per-language basis using the `github.copilot.enable` setting.
+
+    Add an entry to your `settings.json` with the language identifier set to `false`:
+
+    ```json settings.json
+    "github.copilot.enable": {
+      "*": true,
+      "markdown": false,
+      "plaintext": false,
+      "yaml": false
+    }
+    ```
+
+    The `"*"` key controls the default for all languages. Setting a specific language to `false` disables inline completions for that language without affecting others. Chat features remain available regardless of this setting.
+
+    To find the correct language identifier, open a file of that type and check the language indicator in the VS Code status bar (bottom right), or run the **Change Language Mode** command.
+  </Accordion>
+
+  <Accordion title="Can Copilot access files outside my workspace?">
+    No. Copilot only has access to the files and context you explicitly share with it. It cannot read files that are not open in your editor unless you attach them explicitly using a context variable such as `#file`.
+
+    Specifically, Copilot cannot:
+
+    - Browse your filesystem beyond what is open in VS Code
+    - Access files in other workspaces or on remote systems without explicit attachment
+    - Read environment variables, credentials, or configuration files unless you paste their contents into a prompt
+
+    If you want Copilot to reason about a specific file, open it in the editor or use `#file:filename` in your chat prompt to attach it explicitly.
+  </Accordion>
+
+  <Accordion title="What is agent mode and how is it different from regular chat?">
+    **Regular chat** is a conversational interface where you ask questions and receive responses. Copilot can suggest code and explain concepts, but it does not make changes autonomously — you decide what to apply.
+
+    **Agent mode** goes further. An agent can:
+
+    - Autonomously plan a multi-step task from a single high-level prompt
+    - Edit multiple files across your workspace
+    - Run terminal commands to install dependencies, run tests, or build your project
+    - Read the output of those commands and self-correct when it encounters errors
+    - Iterate until the task is complete or it needs your input
+
+    You can switch to agent mode from the mode selector at the top of the Chat panel. Agent mode is best suited for tasks that span multiple files or require a sequence of steps — for example, implementing a new feature, refactoring a module, or debugging a failing test suite.
+
+    <Warning>
+      Agent mode can make changes to your files and run commands in your terminal. Review the agent's proposed actions before confirming, and use version control so you can revert changes if needed.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="How do I use Copilot with private repositories?">
+    Copilot Chat works with any repository you have open in VS Code, including private repositories. No special configuration is required — as long as VS Code can open the repository, Copilot can work with its contents.
+
+    Copilot reads the files you have open in your editor and any files you explicitly attach. It does not need network access to your repository host to read code; it works directly from your local clone.
+
+    For enterprise users, check that your organisation's Copilot policy has not restricted usage to specific repositories or teams. Administrators can manage these settings in the GitHub organisation admin console.
+  </Accordion>
+
+  <Accordion title="Where do I report a bug or request a feature?">
+    Use the public issue tracker for the Copilot release repository:
+
+    **[github.com/microsoft/vscode-copilot-release/issues](https://github.com/microsoft/vscode-copilot-release/issues)**
+
+    Before opening a new issue, search existing issues to see if your bug or request has already been reported. When filing a bug, include:
+
+    - Your VS Code version (**Help > About**)
+    - The Copilot Chat extension version (Extensions panel)
+    - Steps to reproduce the problem
+    - Any relevant error messages or debug logs (see the next FAQ entry for how to export logs)
+
+    For general questions and community discussion, use [GitHub Community Discussions](https://github.com/github-community/community/discussions/categories/copilot).
+  </Accordion>
+
+  <Accordion title="How do I share a debug log when reporting an issue?">
+    Debug logs help the team diagnose problems that are difficult to reproduce. To export your Copilot Chat debug log:
+
+    <Steps>
+      <Step title="Open the debug view">
+        Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run **GitHub Copilot Chat: Show Chat Debug View**. This opens the Copilot Chat output channel.
+      </Step>
+      <Step title="Export the log">
+        Right-click anywhere in the output panel and select **Export As** to save the log to a file.
+      </Step>
+      <Step title="Review before sharing">
+        Open the exported file and review its contents before attaching it to a bug report.
+      </Step>
+    </Steps>
+
+    <Warning>
+      Debug logs may contain personal information, including fragments of code from your editor, file paths, and your GitHub username. Review the exported file carefully and redact any sensitive content before sharing it publicly in a GitHub issue.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Does Copilot Chat work in the web version of VS Code?">
+    Yes. GitHub Copilot Chat is available in the browser-based version of VS Code (vscode.dev and github.dev). Most chat and inline chat features work in the same way as the desktop version.
+
+    However, there are some limitations in the web environment:
+
+    - Features that depend on Node.js APIs are not available, because the extension runs in a web worker extension host rather than a Node.js process
+    - Terminal integration and commands that run local processes (including some agent mode capabilities) are unavailable in purely browser-based environments
+    - Extensions that provide MCP servers or agent tools may not function if they require Node.js
+
+    For the full agent mode experience including terminal command execution, use the VS Code desktop application.
+  </Accordion>
+
+  <Accordion title="What are MCP servers and do I need them?">
+    MCP (Model Context Protocol) servers are an optional extension mechanism that lets you connect Copilot to external tools, data sources, and APIs. Examples include database query tools, issue tracker integrations, documentation search, and custom internal services.
+
+    You do not need MCP servers to use Copilot Chat. All core features — chat, inline suggestions, inline chat, and agent mode — work without any MCP configuration.
+
+    MCP servers are useful when you want Copilot to reason about or act on data that lives outside your codebase, such as querying a live database, fetching from an API, or integrating with a project management tool. You can add MCP servers from the Copilot settings or via the MCP configuration file in your workspace.
+
+    See the [MCP servers documentation](/customization/mcp-servers) for setup instructions.
+  </Accordion>
+</AccordionGroup>

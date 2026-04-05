@@ -1,0 +1,112 @@
+---
+title: "Privacy & data"
+description: "How GitHub Copilot handles your code, prompts, and telemetry data."
+---
+
+GitHub Copilot Chat is built on a commitment to transparency about how your data is used. This page summarises the key privacy considerations for the VS Code extension. For authoritative and binding information, always refer to the official [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement) and the [GitHub Copilot Chat preview license terms](https://docs.github.com/en/early-access/copilot/github-copilot-chat-technical-preview-license-terms).
+
+<Note>
+  This page provides an overview of privacy practices as documented in the extension. For complete, legally authoritative information, refer to the [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement).
+</Note>
+
+## What data Copilot collects
+
+GitHub Copilot Chat collects three categories of data during normal use:
+
+<CardGroup cols={3}>
+  <Card title="Usage telemetry" icon="chart-bar">
+    Aggregate data about how you interact with the extension — which features you use, how often, and whether suggestions are accepted or dismissed.
+  </Card>
+  <Card title="Prompts and context" icon="message">
+    The text of your chat messages and the code context extracted from your editor to generate a response. This is sent to the Copilot API to produce completions.
+  </Card>
+  <Card title="Editor signals" icon="code">
+    Metadata such as file language, cursor position, and open editor state used to improve suggestion relevance.
+  </Card>
+</CardGroup>
+
+## Telemetry controls
+
+The extension respects VS Code's built-in `telemetry.telemetryLevel` setting. You can reduce or disable telemetry at any time without affecting Copilot's core functionality.
+
+<Steps>
+  <Step title="Open VS Code settings">
+    Press `Ctrl+,` (Windows/Linux) or `Cmd+,` (macOS) to open the Settings editor, or open the Command Palette and run **Preferences: Open Settings (UI)**.
+  </Step>
+  <Step title="Search for telemetry">
+    Type `telemetry.telemetryLevel` in the search bar.
+  </Step>
+  <Step title="Set the level">
+    Choose from the following options:
+
+    | Level | What is sent |
+    |-------|-------------|
+    | `all` | Full telemetry including usage statistics and error reports (default) |
+    | `error` | Only crash and error reports |
+    | `crash` | Only crash reports |
+    | `off` | No telemetry data is sent |
+
+    Set the value to `off` to disable all telemetry collection.
+  </Step>
+</Steps>
+
+<Tip>
+  You can also add `"telemetry.telemetryLevel": "off"` directly to your `settings.json` file. See the [VS Code telemetry documentation](https://code.visualstudio.com/docs/supporting/faq#_how-to-disable-telemetry-reporting) for full details.
+</Tip>
+
+## Code snippets and prompts
+
+When you send a chat message or trigger an inline suggestion, the extension constructs a prompt that is sent to the Copilot API. Understanding what is included helps you make informed decisions about which code to work with.
+
+<AccordionGroup>
+  <Accordion title="What is sent to the Copilot API">
+    - The text of your chat message or inline chat prompt
+    - Relevant code from your active editor window (the visible region and surrounding context)
+    - File language and editor metadata
+    - Any files or symbols you explicitly attach or reference using `#file`, `#symbol`, or other context variables
+    - Content from any MCP tools or agent skills that are invoked during the request
+  </Accordion>
+  <Accordion title="What is not stored">
+    GitHub does not use your prompts or code snippets to train foundational models without your consent. Prompts are processed transiently to generate a response and are subject to GitHub's data retention policies, which are detailed in the [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement). Files outside your workspace are never accessed without your explicit action.
+  </Accordion>
+  <Accordion title="Context you control">
+    Copilot only has access to context you provide. It cannot read files you have not opened, access external systems without MCP configuration, or retrieve data from outside your current VS Code workspace.
+  </Accordion>
+</AccordionGroup>
+
+## Transparency note
+
+Microsoft publishes a transparency note that explains the capabilities, limitations, and responsible use guidance for GitHub Copilot Chat. It covers how the model works, known failure modes, and what you can do to get the best results.
+
+Review the [Copilot Chat Transparency Note](https://aka.ms/CopilotChatTransparencyNote) to understand how Copilot Chat generates responses and where human judgment remains essential.
+
+## Enterprise considerations
+
+If you are using GitHub Copilot as part of a Business or Enterprise plan, additional data governance controls are available to your organisation.
+
+<AccordionGroup>
+  <Accordion title="Data residency">
+    GitHub Copilot Business and Enterprise customers can request data processing agreements that specify where data is processed and stored. Contact your GitHub account team or refer to your subscription agreement for details on available data residency options.
+  </Accordion>
+  <Accordion title="IP indemnity">
+    GitHub Copilot Enterprise includes an IP indemnity policy that provides coverage if a third party brings a claim against you for using Copilot-generated code in certain circumstances. This policy does not apply to Free or Pro plans. See [GitHub's documentation on Copilot Enterprise](https://docs.github.com/en/copilot/github-copilot-enterprise/overview/about-github-copilot-enterprise) for eligibility details.
+  </Accordion>
+  <Accordion title="Policy controls for admins">
+    Organisation and enterprise administrators can configure Copilot policies from the GitHub admin console, including:
+
+    - Enabling or disabling Copilot for specific teams or the entire organisation
+    - Controlling whether Copilot suggestions are allowed for public code matches
+    - Managing which Copilot features are available to members
+    - Restricting which AI models can be used
+
+    See [Copilot Business documentation](https://docs.github.com/en/copilot/copilot-business/about-github-copilot-business) for a full list of available policy controls.
+  </Accordion>
+</AccordionGroup>
+
+## Security
+
+<Warning>
+  To receive the latest security fixes, always use the latest version of the GitHub Copilot Chat extension alongside the latest release of VS Code. Older extension versions may not receive security patches. You can enable automatic extension updates in VS Code under **Settings > Extensions: Auto Update**.
+</Warning>
+
+If you believe you have found a security vulnerability in the extension, do not report it through a public GitHub issue. Follow Microsoft's coordinated vulnerability disclosure process described at [aka.ms/SECURITY.md](https://aka.ms/SECURITY.md).

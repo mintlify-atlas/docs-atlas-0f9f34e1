@@ -1,0 +1,116 @@
+---
+title: "Getting started"
+description: "Set up your local development environment for GitHub Copilot Chat."
+---
+
+## Prerequisites
+
+Before cloning the repository, make sure your machine meets the following requirements.
+
+<CardGroup cols={2}>
+  <Card title="Node.js 22.x" icon="node-js">
+    The `engines` field in `package.json` requires `node >= 22.14.0`. Use a version manager such as `nvm` or `fnm` to pin the correct version.
+  </Card>
+  <Card title="Python 3.10 – 3.12" icon="python">
+    Python is required by native build tooling. Versions below 3.10 or above 3.12 are not supported.
+  </Card>
+  <Card title="Git Large File Storage" icon="database">
+    Git LFS is required to pull test cache assets used by the simulation test suite. Install it from [git-lfs.com](https://git-lfs.com) before cloning.
+  </Card>
+  <Card title="Windows: Visual Studio Build Tools" icon="windows">
+    Node native modules are compiled with `node-gyp`, which requires Visual Studio Build Tools 2019 or later. See the [node-gyp documentation](https://github.com/nodejs/node-gyp?tab=readme-ov-file#on-windows) for details.
+  </Card>
+</CardGroup>
+
+## First-time setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/microsoft/vscode-copilot-chat.git
+    cd vscode-copilot-chat
+    ```
+
+    Because the repository uses Git LFS, make sure LFS is initialized on your machine before cloning. If you cloned before installing LFS, run `git lfs pull` to fetch the tracked files.
+  </Step>
+
+  <Step title="Allow script execution (Windows only)">
+    Open PowerShell as an administrator and run:
+
+    ```powershell
+    Set-ExecutionPolicy Unrestricted
+    ```
+
+    This is required so that npm lifecycle scripts can execute without being blocked by the default execution policy.
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
+
+    This installs all Node.js dependencies and compiles any native modules. On Windows, ensure Visual Studio Build Tools are on your `PATH` before running this command.
+  </Step>
+
+  <Step title="Authenticate with Copilot">
+    ```bash
+    npm run get_token
+    ```
+
+    This command opens a browser-based OAuth flow that stores a Copilot token locally. The token is required for the extension to communicate with the Copilot API during development.
+  </Step>
+
+  <Step title="Open in VS Code and start debugging">
+    Open the repository folder in VS Code, then launch the **"Launch Copilot Extension - Watch Mode"** debug configuration. You can trigger it from the Run and Debug panel, or start the build task first with `Cmd+Shift+B` (macOS) or `Ctrl+Shift+B` (Windows/Linux).
+
+    Watch Mode compiles the extension in the background and automatically rebuilds on file changes. The extension is then loaded in a separate Extension Development Host window.
+
+    <Tip>
+      If "Launch Copilot Extension - Watch Mode" does not work, try the **"Launch Copilot Extension"** configuration instead. This runs a one-shot build rather than a watcher.
+    </Tip>
+  </Step>
+</Steps>
+
+## Running in web mode
+
+The extension supports a serverless web runtime backed by a Web Worker extension host. To run it locally:
+
+```bash
+npm run web
+```
+
+Then open `http://localhost:3000` in your browser. In the VS Code instance that opens, enable the hidden setting:
+
+```
+chat.experimental.serverlessWebEnabled
+```
+
+Set it to `true` and reload the window if this is the first time you configure it.
+
+<Note>
+  Not all features are available in web mode. Code that depends on Node.js APIs — such as direct `fs` access, `process.env`, or Node-only npm packages — does not run in the Web Worker extension host. See [Architecture](/contributing/architecture) for details on which layer to use for each runtime.
+</Note>
+
+## Windows Subsystem for Linux (WSL)
+
+Running the extension under WSL is supported. Follow the [VS Code WSL selfhosting instructions](https://github.com/microsoft/vscode/wiki/Selfhosting-on-Windows-WSL) to configure your environment correctly before running `npm install` or any debug configuration.
+
+## Running with Code OSS desktop
+
+If you want to run the extension inside a locally built Code OSS binary rather than a stable or Insiders VS Code build, create a file named `product.overrides.json` at the root of the `vscode` repository with the following contents:
+
+```json
+{
+  "trustedExtensionAuthAccess": {
+    "github": [
+      "github.copilot-chat"
+    ]
+  }
+}
+```
+
+Then launch the extension using the Run and Debug configuration inside the `vscode` repository. Code OSS reads `product.overrides.json` at startup and merges it into the product configuration, granting the extension the auth access it needs.
+
+<Warning>
+  The `product.overrides.json` trick only works for the Code OSS **desktop** build. The Code OSS **web** build does not support this file. For web, you must manually copy the `defaultChatAgent` property into `src/vs/platform/product/common/product.ts` in the `vscode` repository — refer to `CONTRIBUTING.md` for the full example.
+</Warning>

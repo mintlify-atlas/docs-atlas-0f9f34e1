@@ -1,0 +1,145 @@
+---
+title: "Custom instructions"
+description: "Give Copilot project-specific context, coding guidelines, and preferences."
+---
+
+Custom instructions let you shape how Copilot responds without repeating yourself in every chat message. Instead of explaining your stack, coding conventions, or team preferences each time, you write them once and Copilot applies them automatically to every interaction in your project.
+
+## How custom instructions work
+
+When Copilot generates a response, it reads your instruction files alongside your prompt. Instructions are plain Markdown — you describe rules, context, or preferences in natural language and Copilot treats them as background knowledge for the session.
+
+There are two scopes of custom instructions:
+
+- **Workspace instructions** — stored in your repository and apply to everyone who opens the project in VS Code with Copilot.
+- **User instructions** — stored in your VS Code settings and apply across all your projects.
+
+## Workspace instructions
+
+The primary place for project-wide instructions is `.github/copilot-instructions.md` at the root of your repository.
+
+<Steps>
+  <Step title="Create the instructions file">
+    In the root of your repository, create the `.github/` directory if it does not already exist, then add `copilot-instructions.md` inside it.
+
+    ```bash
+    mkdir -p .github
+    touch .github/copilot-instructions.md
+    ```
+  </Step>
+  <Step title="Write your instructions">
+    Open the file and add your project context, code style rules, and any conventions Copilot should follow. Use plain Markdown — headers and bullet lists work well for clarity.
+
+    ```markdown
+    # Copilot Instructions
+
+    ## Code style
+    - Use TypeScript strict mode
+    - Prefer async/await over Promise chains
+    - All functions must have JSDoc comments
+
+    ## Project context
+    This is a Node.js REST API. Use Express patterns.
+    ```
+  </Step>
+  <Step title="Commit the file">
+    Commit `.github/copilot-instructions.md` so your entire team benefits from the same instructions.
+  </Step>
+</Steps>
+
+<Tip>
+  Keep instructions concise and actionable. Copilot performs best when rules are specific ("use `const` over `let` where possible") rather than vague ("write clean code"). Aim for a focused set of guidelines rather than an exhaustive style guide.
+</Tip>
+
+## Task-specific instructions
+
+For more targeted guidance, you can create instruction files with an `applyTo` front matter field. These instructions are attached only when Copilot is working on files that match the specified glob pattern.
+
+Create a Markdown file anywhere in your workspace with a `.instructions.md` extension and add a front matter header:
+
+```markdown
+---
+description: TypeScript code style rules for this project.
+applyTo: "**/*.ts, **/*.js"
+---
+
+For private fields, start the field name with an underscore (_).
+Use `unknown` instead of `any` for untyped values.
+```
+
+When Copilot edits or generates a `.ts` or `.js` file, it will pick up these instructions automatically.
+
+## User-level instructions
+
+To configure instructions that apply to all your projects, add them to your VS Code `settings.json` using the `github.copilot.chat.codeGeneration.instructions` setting.
+
+<Tabs>
+  <Tab title="settings.json">
+    ```json
+    {
+      "github.copilot.chat.codeGeneration.instructions": [
+        {
+          "text": "Always add a comment at the top of generated files with the date and a brief description."
+        },
+        {
+          "file": ".github/copilot-instructions.md"
+        }
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="Workspace settings">
+    You can also scope this setting to a single workspace by placing the same JSON in your `.vscode/settings.json` file.
+
+    ```json
+    {
+      "github.copilot.chat.codeGeneration.instructions": [
+        {
+          "text": "This codebase uses a monorepo layout. Packages live under packages/."
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Each entry in the array can be either:
+- `"text"` — an inline string written directly in the settings file.
+- `"file"` — a path to a Markdown file relative to the workspace root.
+
+<Note>
+  The `github.copilot.chat.codeGeneration.instructions` setting applies specifically to code generation requests. Other tasks such as commit message generation or test generation have their own corresponding settings (e.g., `github.copilot.chat.testGeneration.instructions`).
+</Note>
+
+## Common patterns
+
+<AccordionGroup>
+  <Accordion title="Specifying your tech stack">
+    Describe the libraries and frameworks in use so Copilot defaults to the right APIs without being asked.
+
+    ```markdown
+    ## Stack
+    - Runtime: Node.js 20
+    - Framework: Express 5
+    - ORM: Prisma with PostgreSQL
+    - Testing: Vitest
+    ```
+  </Accordion>
+  <Accordion title="Enforcing naming conventions">
+    ```markdown
+    ## Naming
+    - React components: PascalCase
+    - Utility functions: camelCase
+    - Constants: UPPER_SNAKE_CASE
+    - Database tables: snake_case
+    ```
+  </Accordion>
+  <Accordion title="Setting error handling expectations">
+    ```markdown
+    ## Error handling
+    - Always use custom error classes that extend `AppError`
+    - Log errors with `logger.error()` before re-throwing
+    - Never swallow errors silently
+    ```
+  </Accordion>
+</AccordionGroup>

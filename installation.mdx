@@ -1,0 +1,151 @@
+---
+title: "Installation"
+description: "Install GitHub Copilot Chat and set up your GitHub Copilot subscription."
+---
+
+## Subscription options
+
+GitHub Copilot is available on several plans. Choose the one that fits your situation.
+
+<AccordionGroup>
+  <Accordion title="Free">
+    The Free plan lets you try Copilot with no credit card required. It includes:
+
+    - **50 chat messages per month** in the Copilot Chat panel and inline chat
+    - **2,000 code completions per month** (inline ghost text and next edit suggestions)
+    - Access to a selection of AI models
+
+    When you reach a monthly limit, that feature pauses until the next billing cycle. The other feature continues to work independently—exhausting chat messages does not affect completions, and vice versa.
+
+    Sign up at [github.com/settings/copilot](https://github.com/settings/copilot).
+  </Accordion>
+
+  <Accordion title="Individual (Pro)">
+    The Individual plan is for developers who want unlimited usage on a personal account. It includes:
+
+    - Unlimited code completions
+    - Unlimited chat messages
+    - Access to the full range of AI models, including the latest releases
+    - Support for all Copilot Chat features including agent mode, inline chat, and next edit suggestions
+
+    Billed monthly or annually per seat. See [github.com/features/copilot](https://github.com/features/copilot) for current pricing.
+  </Accordion>
+
+  <Accordion title="Business">
+    Copilot Business is designed for teams and organizations. It adds:
+
+    - Centralized license management and seat assignment through your GitHub organization
+    - Organization-wide policy controls (e.g., disable suggestions matching public code)
+    - Audit logs for usage and access
+    - All features from the Individual plan
+
+    An organization owner or billing manager provisions seats through the GitHub organization settings. See the [Copilot Business docs](https://docs.github.com/en/copilot/copilot-business/about-github-copilot-business) for setup instructions.
+  </Accordion>
+
+  <Accordion title="Enterprise">
+    Copilot Enterprise extends Business with features built for large organizations:
+
+    - Copilot knowledge bases that index your internal repositories for context-aware answers
+    - Pull request summaries and review assistance on GitHub.com
+    - Fine-grained policy management at the enterprise level
+    - All features from the Business plan
+
+    Enterprise is configured through your GitHub Enterprise Cloud account. See the [Copilot Enterprise docs](https://docs.github.com/en/copilot/github-copilot-enterprise/overview/about-github-copilot-enterprise) for details.
+  </Accordion>
+</AccordionGroup>
+
+## Prerequisites
+
+Before installing the extension, confirm the following:
+
+- **Visual Studio Code 1.115.0 or later** — Copilot Chat requires the latest VS Code release. Download it from [code.visualstudio.com](https://code.visualstudio.com).
+- **A GitHub account** — Required to sign in and link your Copilot subscription.
+- **Node.js 22 or later** — Only required if you plan to build or develop the extension from source. End users do not need Node.js installed.
+
+<Warning>
+Copilot Chat releases in lockstep with VS Code. If you are running an older version of VS Code, the extension will install but you won't have access to the latest features and AI models. Always keep VS Code up to date.
+</Warning>
+
+## Installation
+
+Choose the method that works best for your setup.
+
+<CodeGroup>
+
+```bash Command line
+code --install-extension GitHub.copilot-chat
+```
+
+```text Extensions view
+1. Press Ctrl+Shift+X (Windows/Linux) or Cmd+Shift+X (macOS)
+2. Search for "GitHub Copilot Chat"
+3. Locate the extension published by GitHub (ID: github.copilot-chat)
+4. Click Install
+```
+
+```text VS Code Marketplace
+1. Visit marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat
+2. Click the Install button on the page
+3. Allow your browser to open VS Code when prompted
+4. Click Install in the VS Code dialog that appears
+```
+
+</CodeGroup>
+
+After installation, VS Code may prompt you to reload the window. Click **Reload** to activate the extension.
+
+## Signing in
+
+Once the extension is active, you need to link your GitHub account:
+
+<Steps>
+  <Step title="Respond to the sign-in prompt">
+    A notification appears in the bottom-right corner of VS Code after the extension loads. Click **Sign in to GitHub** to start the authentication flow.
+
+    If the notification doesn't appear, open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run **GitHub Copilot: Sign In**.
+  </Step>
+
+  <Step title="Authorize in your browser">
+    VS Code opens a browser window asking you to authorize the GitHub Copilot extension. Review the requested permissions and click **Authorize Visual-Studio-Code**.
+  </Step>
+
+  <Step title="Return to VS Code">
+    After authorization, your browser redirects back to VS Code automatically. The Copilot icon in the status bar becomes active, confirming that your account is connected and your subscription is recognized.
+  </Step>
+</Steps>
+
+<Tip>
+You can enable or disable inline code completions on a per-language basis. Click the Copilot icon in the status bar and select **Enable/Disable completions for [language]**. This is useful if you want suggestions in Python and JavaScript but not in Markdown or plain text files.
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="The extension installed but the Copilot icon doesn't appear in the status bar">
+    Reload the VS Code window by opening the Command Palette and running **Developer: Reload Window**. If the icon still doesn't appear, check that the extension is enabled in the Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`) and that it isn't listed under **Disabled**.
+  </Accordion>
+
+  <Accordion title="Sign in fails or I'm redirected to an error page">
+    Make sure your GitHub account has an active Copilot subscription or is enrolled in the Free plan. If you're part of an organization, confirm that your admin has assigned you a seat. Then try signing in again from the Command Palette: **GitHub Copilot: Sign In**.
+  </Accordion>
+
+  <Accordion title="Inline suggestions aren't appearing as I type">
+    Check the following:
+
+    1. Click the Copilot icon in the status bar and confirm completions are enabled for the current language.
+    2. Make sure the `editor.inlineSuggest.enabled` setting is `true` in your VS Code settings.
+    3. Verify your monthly completion quota hasn't been exhausted on the Free plan. Open the chat panel and send a message to confirm chat is also working.
+  </Accordion>
+
+  <Accordion title="Chat responses reference outdated or incorrect code">
+    Copilot Chat uses the files open in your editor and any context you explicitly attach as its primary reference. If responses feel off, try:
+
+    - Opening the relevant files in VS Code tabs so they're part of the active workspace context.
+    - Selecting the specific code you want discussed before opening the chat.
+    - Using `#file` references in your prompt to point Copilot at a specific file.
+  </Accordion>
+
+  <Accordion title="VS Code says the extension requires a newer version of VS Code">
+    GitHub Copilot Chat 0.43.0 requires VS Code 1.115.0 or later. Update VS Code through **Help > Check for Updates** on Windows/Linux, or through the Mac App Store or direct download on macOS.
+  </Accordion>
+</AccordionGroup>

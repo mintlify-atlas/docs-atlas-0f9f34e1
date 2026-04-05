@@ -1,97 +1,78 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "GitHub Copilot Chat"
+description: "Your AI peer programmer in Visual Studio Code — autonomous agents, inline suggestions, and intelligent chat."
 ---
 
-## Setting up
+GitHub Copilot Chat brings AI-powered coding assistance directly into Visual Studio Code. From autonomous agents that handle full features end-to-end to inline suggestions as you type, Copilot helps you write better code faster.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get Copilot Chat running in VS Code in minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Agent Mode" icon="robot" href="/features/agent-mode">
+    Let AI agents plan, edit files, and run commands autonomously.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Inline Suggestions" icon="wand-magic-sparkles" href="/features/inline-suggestions">
+    Accept ghost text and next-edit suggestions as you code.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="MCP Servers" icon="plug" href="/customization/mcp-servers">
+    Connect external tools and data sources to Copilot.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## What you can do with Copilot Chat
 
-Everything you need to create world-class documentation.
+<CardGroup cols={2}>
+  <Card title="Chat Panel" icon="message" href="/features/chat">
+    Ask questions, explore code, and get explanations using natural language.
+  </Card>
+  <Card title="Inline Chat" icon="pen-to-square" href="/features/inline-chat">
+    Make targeted edits right inside the editor with `Ctrl+I` / `Cmd+I`.
+  </Card>
+  <Card title="Custom Instructions" icon="sliders" href="/customization/custom-instructions">
+    Give Copilot project-specific context and coding guidelines.
+  </Card>
+  <Card title="Agent Skills & Custom Agents" icon="screwdriver-wrench" href="/customization/agent-skills">
+    Extend Copilot with specialized capabilities and personas.
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Get started
 
-## Need inspiration?
+<Steps>
+  <Step title="Sign up for GitHub Copilot">
+    Go to [github.com/settings/copilot](https://github.com/settings/copilot) and activate a Free, Pro, or Business plan.
+  </Step>
+  <Step title="Install the extension">
+    Open VS Code and install the **GitHub Copilot Chat** extension from the Extensions Marketplace (search `GitHub.copilot-chat`).
+  </Step>
+  <Step title="Sign in">
+    VS Code will prompt you to sign in with your GitHub account. Approve the authorization in your browser.
+  </Step>
+  <Step title="Start chatting">
+    Open the Copilot Chat panel with `Ctrl+Alt+I` / `Cmd+Option+I`, or press `Ctrl+I` / `Cmd+I` in the editor for inline chat.
+  </Step>
+</Steps>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Note>
+  GitHub Copilot Free gives you 2,000 code completions and 50 chat messages per month at no cost. Upgrade to a paid plan for unlimited usage. See the [installation guide](/installation) for all subscription options.
+</Note>
+
+## For contributors
+
+Building on or contributing to the Copilot Chat extension?
+
+<CardGroup cols={2}>
+  <Card title="Development Setup" icon="laptop-code" href="/contributing/getting-started">
+    Set up your local dev environment and run the extension from source.
+  </Card>
+  <Card title="Architecture Overview" icon="sitemap" href="/contributing/architecture">
+    Understand layers, services, and the extension structure.
+  </Card>
+  <Card title="Building Tools" icon="hammer" href="/contributing/tools">
+    Add new language model tools to the agent loop.
+  </Card>
+  <Card title="Prompt Development" icon="code" href="/contributing/prompts">
+    Use the TSX prompt framework to craft effective LLM prompts.
+  </Card>
+</CardGroup>

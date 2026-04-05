@@ -1,0 +1,73 @@
+---
+title: "Introduction"
+description: "GitHub Copilot Chat is an AI peer programming tool that brings autonomous agents, inline suggestions, and natural-language chat directly into Visual Studio Code."
+---
+
+## What is GitHub Copilot Chat?
+
+GitHub Copilot Chat is the conversational AI layer of GitHub Copilot, integrated natively into Visual Studio Code. It lets you ask questions, generate code, explain logic, debug errors, and run autonomous agents—all without leaving your editor. Rather than switching between a browser and your IDE, you get AI assistance in the exact context where you're writing code.
+
+At its core, Copilot Chat combines three interaction modes: a persistent chat panel for open-ended conversations with your codebase, inline chat for precise edits at the cursor, and agent mode for end-to-end task execution. Whether you're exploring an unfamiliar repo, refactoring a module, or building a feature from scratch, Copilot Chat meets you where you are.
+
+## Key capabilities
+
+- **Autonomous agents** — Give an agent a high-level task and it plans the work, edits multiple files, runs terminal commands, and self-corrects when it encounters errors or failing tests.
+- **Parallel agent sessions** — Run multiple agent sessions at the same time and manage them from a single central view, switching between active work and reviewing file changes as needed.
+- **Inline chat** — Press `Ctrl+I` / `Cmd+I` to open a chat prompt directly in the editor for targeted refactors, error handling additions, or algorithm explanations without breaking your flow.
+- **Inline suggestions** — Receive ghost text completions as you type, plus next edit suggestions that predict your next logical change and let you accept them with `Tab`.
+- **Custom instructions** — Provide project-wide or task-specific coding guidelines so Copilot generates code that fits your conventions from the start.
+- **Agent skills and custom agents** — Extend Copilot with specialized capabilities or define custom personas tailored to your team's workflows.
+- **MCP server integrations** — Connect agents to external data sources, APIs, and tools through Model Context Protocol servers and VS Code extensions.
+- **Planning mode** — Use the Plan agent to break complex tasks into structured implementation plans before handing them off to an execution agent.
+- **Cloud agents** — Delegate tasks to cloud-based agents that create branches, implement changes, and open pull requests for your team to review.
+
+## Requirements
+
+Before you can use GitHub Copilot Chat, make sure you have the following:
+
+- **Visual Studio Code `1.115.0` or later** — Copilot Chat releases in lockstep with VS Code and requires the latest version to access the latest models and features.
+- **An active GitHub Copilot subscription** — A Free plan is available with no credit card required. Paid Individual, Business, and Enterprise plans unlock higher usage limits and additional features. You can sign up at [github.com/settings/copilot](https://github.com/settings/copilot).
+
+<Note>
+Because Copilot Chat is deeply integrated with VS Code's UI, every new version of the extension is only compatible with the latest VS Code release. If you are running an older version of VS Code, update it to ensure you can use the current extension and the latest AI models.
+</Note>
+
+## Supported languages
+
+GitHub Copilot Chat works with any programming language. Because the underlying models were trained on code from public repositories, support is strongest for the most widely used languages and ecosystems, including:
+
+- JavaScript and TypeScript
+- Python
+- Java
+- C# and C++
+- Go
+- Ruby
+- PHP
+- Kotlin
+
+Less common languages are also supported—quality varies depending on how much public training data was available for that language.
+
+## Version compatibility
+
+Copilot Chat releases in lockstep with VS Code due to its deep UI integration. This means:
+
+- Each new version of Copilot Chat is compatible only with the **latest VS Code release**.
+- Only the latest extension versions have access to the latest AI models provided by the Copilot service, because even minor model upgrades require prompt changes and fixes in the extension.
+- To get the latest security fixes, always keep both VS Code and the Copilot Chat extension up to date.
+
+## Explore further
+
+<CardGroup cols={2}>
+  <Card title="Quick start" icon="rocket" href="/quickstart">
+    Get Copilot Chat running in VS Code in under 5 minutes.
+  </Card>
+  <Card title="Chat" icon="message-square" href="/features/chat">
+    Learn how to use the chat panel for conversations with your codebase.
+  </Card>
+  <Card title="Agent mode" icon="bot" href="/features/agent-mode">
+    Let autonomous agents handle complete coding tasks end-to-end.
+  </Card>
+  <Card title="Custom instructions" icon="sliders" href="/customization/custom-instructions">
+    Teach Copilot your project's conventions and coding guidelines.
+  </Card>
+</CardGroup>

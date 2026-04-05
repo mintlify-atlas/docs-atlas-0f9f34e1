@@ -1,0 +1,127 @@
+---
+title: "Architecture"
+description: "Understand the extension's layer system, services, and code organization."
+---
+
+## Overview
+
+GitHub Copilot Chat is a VS Code extension that runs in two distinct extension hosts: a **Node.js host** for desktop VS Code and a **Web Worker host** for browser-based and serverless VS Code. The codebase is organized into layers that enforce which runtime APIs a module is allowed to use, preventing accidental coupling between Node.js-only code and code that must run in both runtimes.
+
+Features are implemented as *contributions* (event handlers, commands, panels, chat participants) and *services* (singleton providers consumed via dependency injection). Both follow VS Code's instantiation service pattern and are automatically discovered at startup from a small set of registration files.
+
+## Layer system
+
+A layer defines the set of ambient APIs available to source files inside it. Files must only import from layers at or below their own level.
+
+<AccordionGroup>
+  <Accordion title="common — pure TypeScript/JavaScript">
+    Files in `common` may only use JavaScript built-in APIs. They are allowed to reference **types** from the VS Code API (for parameter and return type annotations), but must not call any VS Code API at runtime. This makes `common` modules suitable for use in both the Node.js and Web Worker hosts, and also in plain Node.js test runners outside VS Code.
+  </Accordion>
+
+  <Accordion title="vscode — VS Code API access">
+    Files in `vscode` have full runtime access to the VS Code extension API (`vscode.*`). They can import from `common`. Use this layer for code that depends on VS Code but does not need Node.js-specific capabilities, so it can run in both desktop and web.
+  </Accordion>
+
+  <Accordion title="node — Node.js APIs">
+    Files in `node` may use Node.js built-in modules (`fs`, `path`, `child_process`, etc.) and Node-only npm packages. They can import from `common`. Code in this layer cannot run in a Web Worker extension host.
+  </Accordion>
+
+  <Accordion title="vscode-node — VS Code + Node.js combined">
+    Files in `vscode-node` have access to both the VS Code API and Node.js APIs. They can import from `common`, `vscode`, and `node`. This is the most permissive desktop-only layer — use it only when you genuinely need both runtime environments simultaneously.
+  </Accordion>
+
+  <Accordion title="worker — Web Worker APIs">
+    Files in `worker` may use Web Worker globals (e.g., `self`, `fetch`, `crypto`) and can import from `common`. They cannot use VS Code APIs at runtime.
+  </Accordion>
+
+  <Accordion title="vscode-worker — VS Code + Web Worker combined">
+    Files in `vscode-worker` have access to both the VS Code API and Web Worker APIs. They can import from `common`, `vscode`, and `worker`. Use this layer for web-runtime-specific implementations that also need VS Code APIs.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Prefer placing code in the `vscode` layer whenever possible. Code in `vscode` runs in all supported runtimes (Node.js and Web Worker), which reduces duplication and makes it easier to extend the extension to new hosts in the future.
+</Tip>
+
+## Top-level folder structure
+
+```
+src/
+├── util/        # Cross-cutting utility code
+├── platform/    # Shared services (telemetry, config, search, …)
+├── extension/   # All feature implementations
+└── vscodeTypes.ts
+
+test/            # All test code
+```
+
+<CardGroup cols={1}>
+  <Card title="src/util" icon="wrench">
+    Cross-cutting utility modules that can be used anywhere in the codebase. Files here can be loaded by test runners that operate outside VS Code — they must import VS Code types only through the `vscodeTypes` shim, which is replaced with a stub during testing. `util` cannot import from `platform` or `extension`.
+  </Card>
+  <Card title="src/platform" icon="server">
+    Services used to implement extension features: telemetry, configuration, semantic search, and similar infrastructure concerns. `platform` can import from `util` but not from `extension`.
+  </Card>
+  <Card title="src/extension" icon="puzzle">
+    The main feature folder. All chat participants, intents, prompts, tools, panels, and commands live here. `extension` can import from both `util` and `platform`. Each subfolder inside `extension` is further divided by layer (`common/`, `vscode/`, `node/`, `vscode-node/`, etc.).
+  </Card>
+  <Card title="test" icon="flask-conical">
+    All test code. Tests may import from `util` and `platform` (`base/`), but not from `extension/`. This boundary keeps tests isolated from feature-level code.
+  </Card>
+</CardGroup>
+
+## Extension entry points
+
+The extension is built as two separate bundles, each with its own entry point:
+
+| Bundle | Entry point | Runtime |
+|--------|-------------|---------|
+| Desktop (Node.js) | `src/extension/extension/vscode-node/extension.ts` | Node.js extension host |
+| Web (Web Worker) | `src/extension/extension/vscode-worker/extension.ts` | Web Worker extension host |
+
+Both entry points bootstrap the instantiation service, register contributions and services, and activate the extension. Shared activation logic lives in `vscode`-layer files that both entry points import.
+
+## Contributions and services
+
+Contributions (commands, chat participants, webviews, event handlers) and services (dependency-injected singletons) are each registered in three files that correspond to where they can run:
+
+<Tabs>
+  <Tab title="Contributions">
+    | File | Where it runs |
+    |------|---------------|
+    | `src/extension/extension/vscode/contributions.ts` | Both Node.js and Web Worker hosts |
+    | `src/extension/extension/vscode-node/contributions.ts` | Node.js host only |
+    | `src/extension/extension/vscode-worker/contributions.ts` | Web Worker host only |
+
+    When the extension activates, the instantiation service reads the appropriate `contributions.ts` file for the current runtime and registers each contribution automatically. You do not need to wire up contributions manually elsewhere.
+  </Tab>
+  <Tab title="Services">
+    | File | Where it runs |
+    |------|---------------|
+    | `src/extension/extension/vscode/services.ts` | Both Node.js and Web Worker hosts |
+    | `src/extension/extension/vscode-node/services.ts` | Node.js host only |
+    | `src/extension/extension/vscode-worker/services.ts` | Web Worker host only |
+
+    Services registered here are instantiated lazily by the dependency injection container. Contributions declare their service dependencies in their constructors and receive them automatically.
+  </Tab>
+</Tabs>
+
+<Note>
+  When adding a new contribution or service, prefer the `vscode/` variants so that your code is available in both runtimes. Only use the `vscode-node/` or `vscode-worker/` variants when the implementation genuinely requires APIs that are unavailable in the other runtime.
+</Note>
+
+## Using `base/common` utilities
+
+The `src/util/vs` folder contains utilities copied from the `microsoft/vscode` repository — modules like `async.ts`, `strings.ts`, and `map.ts` from `base/common`. This folder is **read-only**; do not edit its contents directly.
+
+To add a new utility module from the VS Code repo:
+
+1. Open `script/setup/copySources.ts` and add the module path to the list near the end of the file.
+2. Place the `vscode` repository as a sibling folder next to `vscode-copilot-chat`.
+3. Run the copy script:
+
+```bash
+npx tsx script/setup/copySources.ts
+```
+
+Changes to copied sources should be made in the `microsoft/vscode` repo and re-copied. This keeps the utilities in sync and avoids diverging implementations.

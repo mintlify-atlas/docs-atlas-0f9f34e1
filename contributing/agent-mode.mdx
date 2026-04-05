@@ -1,0 +1,99 @@
+---
+title: "Agent mode internals"
+description: "Understand the key files and architecture behind Copilot's autonomous agent mode."
+---
+
+Agent mode is the autonomous, multi-step problem-solving experience in GitHub Copilot Chat. At a technical level it is a VS Code [chat participant](https://code.visualstudio.com/api/extension-guides/chat) registered with a special flag that identifies it as the agent mode participant. It uses the standard `vscode.lm.invokeTool` API for tool calls and several [proposed APIs](https://code.visualstudio.com/api/advanced-topics/using-proposed-api) for capabilities not yet in the stable surface.
+
+<Note>
+  The word "agent" appears in multiple contexts throughout the codebase. It can refer to: (1) the new agent mode described on this page, (2) older chat participants such as `@workspace` and `@vscode`, or (3) Copilot Extension agents installed by a GitHub App. Do not assume a file or service named "agent" is related to agent mode without checking the context.
+</Note>
+
+## Key files
+
+<CardGroup cols={2}>
+  <Card title="agentPrompt.tsx" icon="file-code">
+    `src/extension/prompts/node/agent/agentPrompt.tsx`
+
+    The main entrypoint for rendering the agent prompt. Assembles all context — conversation history, tool results, workspace state, custom instructions, notebook content, and more — into the final message array sent to the model. The `AgentPromptProps` interface defines everything the prompt needs as input.
+  </Card>
+  <Card title="defaultAgentInstructions.tsx" icon="file-code">
+    `src/extension/prompts/node/agent/defaultAgentInstructions.tsx`
+
+    Contains the default agent mode system prompt. Defines the instructions that shape the model's behavior: how to use tools, how to handle edits, when to ask clarifying questions, and the overall task-completion strategy. Model-family-specific instruction variants also exist in the same directory (e.g., `geminiPrompts.tsx`, `anthropicPrompts.tsx`).
+  </Card>
+  <Card title="toolCallingLoop.ts" icon="rotate-cw">
+    `src/extension/intents/node/toolCallingLoop.ts`
+
+    Implements the agentic tool-calling loop. After each LLM response, this file processes any tool calls the model requested, executes them, feeds the results back into the next prompt, and decides whether to continue iterating or stop. It also handles the tool call limit, telemetry, cancellation, and streaming.
+  </Card>
+  <Card title="chatParticipants.ts" icon="users">
+    `src/extension/conversation/vscode-node/chatParticipants.ts`
+
+    Registers agent mode and all other chat participants with VS Code. Also contains the request handlers that receive incoming `ChatRequest` objects from VS Code and route them to the appropriate intent.
+  </Card>
+</CardGroup>
+
+## How the agent loop works
+
+At a high level, each agent turn follows this sequence:
+
+<Steps>
+  <Step title="Receive the request">
+    VS Code delivers a `ChatRequest` to the registered handler in `chatParticipants.ts`. The request includes the user's message, the set of tools that are currently enabled in the tool picker, attached context variables, and conversation history.
+  </Step>
+
+  <Step title="Select tools for this request">
+    `getTools()` in `src/extension/intents/node/agentIntent.ts` determines the final set of tools to include in the model request. The tool picker in VS Code provides a candidate set, but the agent applies additional filtering — for example, some edit tools are only enabled for certain models or gated behind configuration or experiments. The agent always has the final say on which tools are included.
+  </Step>
+
+  <Step title="Build the prompt">
+    `agentPrompt.tsx` assembles the full prompt tree. This includes the system prompt from `agentInstructions.tsx`, conversation history, tool results from previous turns, workspace context, custom instructions, and the current user message. The prompt-tsx renderer then applies token budget management and priority-based pruning.
+  </Step>
+
+  <Step title="Call the LLM">
+    The rendered message array is sent to the Copilot API via `ChatMLFetcher`. The response is streamed back.
+  </Step>
+
+  <Step title="Process tool calls">
+    `toolCallingLoop.ts` inspects the streamed response. If the model requested one or more tool calls, each tool is invoked via `vscode.lm.invokeTool`. Results are collected and appended to the conversation as tool result messages.
+  </Step>
+
+  <Step title="Loop or stop">
+    If tool calls were made, the loop rebuilds the prompt with the new tool results and calls the LLM again. This continues until the model produces a response with no tool calls, the tool call limit is reached, or the user cancels. When the loop ends, the final response is streamed to the chat UI.
+  </Step>
+</Steps>
+
+## Tool selection: getTools() in agentIntent.ts
+
+The `getTools()` function in `src/extension/intents/node/agentIntent.ts` is the central place where the agent decides which tools to include in a given model request. It starts from the tools enabled by the VS Code tool picker (passed in on the `ChatRequest`) and then applies agent-side filtering:
+
+- Some tools are only available for specific model families (for example, a model-specific override may substitute a standard tool for certain models).
+- Some edit tools are gated behind configuration keys or A/B experiments and are excluded if the conditions are not met.
+- Tools from MCP servers registered with VS Code are also passed through this pipeline.
+
+If you are adding a tool and it is not appearing in agent requests, `getTools()` is the first place to check.
+
+## Proposed API usage
+
+Agent mode uses several VS Code proposed APIs that are not yet in the stable extension API surface. These are declared in `package.json` under `enabledApiProposals`. Proposed APIs require the extension to opt in with a specific version string (for example, `"lmTools@2"`) and require that the VS Code `engines.vscode` version matches a build where the proposal is available.
+
+If you are adding a capability that depends on a proposed API, read the [API updates](/contributing/api-updates) page before proceeding. Adopting a proposed API incorrectly can break the next day's Insiders build.
+
+## Reading requests for debugging
+
+The **Show Chat Debug View** command is the primary debugging tool for agent mode development. Running it opens a tree view in VS Code with an entry for every request made in the current session.
+
+For each request you can inspect:
+
+- The full prompt sent to the model, including all system, user, and assistant messages
+- Which tools were enabled and their schemas
+- The model's response, including any tool calls it made
+- Individual tool call entries with their inputs and outputs
+- A prompt-tsx debug view (opens in the Simple Browser) showing the component tree before and after pruning
+
+Use right-click → **Export As...** to save the request log to a file. This log is also useful when filing issues — sharing it helps the team reproduce the problem. Be aware that the log may contain personal information such as file contents or terminal output; review it before sharing.
+
+<Warning>
+  The request log may contain the contents of files open in your editor, terminal output, and other personal information. Always review the exported log before sharing it with anyone outside your organization.
+</Warning>

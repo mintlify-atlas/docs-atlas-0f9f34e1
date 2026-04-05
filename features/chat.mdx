@@ -1,0 +1,118 @@
+---
+title: "Chat panel"
+description: "Ask questions, explore your codebase, and get AI explanations using natural language."
+---
+
+The chat panel gives you a persistent conversation interface with GitHub Copilot inside VS Code. You can ask questions about your code, request explanations, explore unfamiliar codebases, and drive edits across multiple files — all without leaving the editor.
+
+## Opening the chat panel
+
+<Steps>
+  <Step title="Use the keyboard shortcut">
+    Press `Ctrl+Alt+I` on Windows and Linux, or `Cmd+Option+I` on macOS, to open the chat panel.
+  </Step>
+  <Step title="Use the sidebar icon">
+    Click the Copilot icon in the VS Code activity bar (the left sidebar). If the icon is not visible, right-click the activity bar and enable **GitHub Copilot**.
+  </Step>
+  <Step title="Use the Command Palette">
+    Open the Command Palette with `Ctrl+Shift+P` / `Cmd+Shift+P` and run **GitHub Copilot: Open Chat**.
+  </Step>
+</Steps>
+
+## Chat participants
+
+Chat participants are scoped assistants that have access to specific knowledge domains. You invoke them by prefixing your message with `@`.
+
+<CardGroup cols={2}>
+  <Card title="@workspace" icon="folder-open">
+    Searches your entire codebase to answer questions about project structure, dependencies, and logic. Use it for questions that span multiple files.
+
+    **Example prompts:**
+    ```
+    @workspace Where is authentication handled?
+    @workspace Which files import the DatabaseService class?
+    @workspace Explain the data flow from the API handler to the database layer.
+    ```
+  </Card>
+  <Card title="@vscode" icon="code">
+    Answers questions about VS Code APIs, settings, keybindings, and extension development. Use it when you need help configuring the editor or building an extension.
+
+    **Example prompts:**
+    ```
+    @vscode How do I change the default terminal shell?
+    @vscode What setting controls word wrap?
+    @vscode How do I register a command in a VS Code extension?
+    ```
+  </Card>
+</CardGroup>
+
+## Context attachments
+
+You can attach specific context to your prompts so Copilot focuses on the right code. Type `#` to trigger the context picker.
+
+| Reference | What it attaches |
+|---|---|
+| `#file` | The contents of a specific file from your workspace |
+| `#symbol` | A specific function, class, or variable definition |
+| `#codebase` | Performs a semantic search across the whole codebase |
+
+**Example:** To ask about a specific function in context:
+
+```
+Explain what #symbol:parseQueryString does and suggest ways to make it more robust.
+```
+
+```
+Refactor the error handling in #file:src/api/client.ts to use a Result type.
+```
+
+## Chat modes
+
+The chat panel offers three modes. Select the mode from the dropdown at the top of the chat input.
+
+<AccordionGroup>
+  <Accordion title="Ask">
+    Conversational mode for questions and explanations. Copilot responds with text and code snippets but does not make changes to your files. Use this when you want to understand code, explore a concept, or get recommendations before committing to an approach.
+  </Accordion>
+  <Accordion title="Edit">
+    Propose edits to one or more files in your workspace. Copilot shows a diff of the proposed changes, and you can accept or reject them. Use this for targeted, well-scoped changes where you know exactly which files should be affected.
+  </Accordion>
+  <Accordion title="Agent">
+    Autonomous multi-step execution. Copilot plans the work, edits files, runs terminal commands, and self-corrects when it encounters errors. Use this for complex tasks that span many files or require build feedback to complete. See [Agent mode](/features/agent-mode) for details.
+  </Accordion>
+</AccordionGroup>
+
+## Keyboard shortcuts
+
+| Action | Windows / Linux | macOS |
+|---|---|---|
+| Open chat panel | `Ctrl+Alt+I` | `Cmd+Option+I` |
+| Submit message | `Enter` | `Enter` |
+| New line in input | `Shift+Enter` | `Shift+Enter` |
+| New chat session | `Ctrl+L` | `Cmd+L` |
+| Attach context (`#`) | Type `#` | Type `#` |
+| Invoke participant (`@`) | Type `@` | Type `@` |
+
+## Tips for effective prompts
+
+<AccordionGroup>
+  <Accordion title="Be specific about the goal, not the steps">
+    Instead of "edit the function," say "refactor `fetchUser` to return a `Result<User, ApiError>` type instead of throwing exceptions." The more precisely you describe the outcome, the more accurate the response.
+  </Accordion>
+  <Accordion title="Use context attachments to ground the response">
+    Attach `#file` or `#symbol` references so Copilot sees the actual code rather than having to guess the implementation. This reduces hallucinations and produces more accurate edits.
+  </Accordion>
+  <Accordion title="Iterate with follow-up messages">
+    You do not need to write the perfect prompt on the first try. Send a broad request, review the result, and refine with follow-up messages. The conversation history keeps prior context available.
+  </Accordion>
+  <Accordion title="Ask Copilot to explain its reasoning">
+    Add "explain your approach" or "walk me through the changes" to understand what Copilot is doing. This is especially useful before accepting large edits.
+  </Accordion>
+  <Accordion title="Use @workspace for cross-file questions">
+    If your question involves how different modules interact or where something is defined, prefix it with `@workspace`. This triggers a codebase search rather than relying on what happens to be open in the editor.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Each conversation has a context window limit. For long sessions, Copilot summarizes earlier turns to make room for new messages. If you notice that Copilot seems to have forgotten earlier context, start a new chat session with `Ctrl+L` / `Cmd+L` and provide a brief summary of the task.
+</Note>

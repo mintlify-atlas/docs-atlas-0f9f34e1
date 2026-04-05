@@ -1,0 +1,108 @@
+---
+title: "API updates"
+description: "How to adopt VS Code proposed API changes in the Copilot Chat extension."
+---
+
+The Copilot Chat extension depends on both stable and proposed VS Code extension APIs. When those APIs change, the extension must be updated in lock-step so that the version installed in VS Code Insiders always matches what the running VS Code build provides. Two mechanisms control this compatibility: the `engines.vscode` field in `package.json` and the proposed API version number declared in `enabledApiProposals`.
+
+## The two compatibility mechanisms
+
+<CardGroup cols={2}>
+  <Card title="engines.vscode" icon="settings">
+    Specifies the minimum VS Code version (including a date) required to activate the extension. Used for **additive** API changes where the old extension still works with the new VS Code, but the new extension requires at least the new VS Code.
+
+    Example: `"vscode": "^1.91.0-20240624"`
+  </Card>
+  <Card title="enabledApiProposals" icon="shield-check">
+    Lists the proposed API proposals the extension uses, optionally with a version suffix. Used for **breaking** API changes where an older extension would be incompatible with a new VS Code build.
+
+    Example: `"lmTools@2"`
+  </Card>
+</CardGroup>
+
+## Making breaking changes to proposed API
+
+A breaking change is any change to a proposed API that makes an older version of the extension incompatible with the new VS Code build. When you make such a change, you must follow all three steps below on the **same day** as the VS Code change. Missing a same-day adoption will break the next Insiders build for all Copilot Chat users.
+
+<Warning>
+  Breaking API changes must be adopted in the extension at the same time they land in VS Code. The next day's Insiders build will not have a compatible Copilot Chat extension if you miss the window.
+</Warning>
+
+<Steps>
+  <Step title="Update the API version in the proposal .d.ts comment">
+    In the VS Code repository, find the `.d.ts` file for the proposal being changed (for example, `src/vscode-dts/vscode.proposed.lmTools.d.ts`). Update the version comment at the top of the file:
+
+    ```typescript
+    // version=2
+    ```
+
+    The build task reads this comment and automatically updates `extensionsApiProposals.ts`. You do not need to edit that file manually.
+  </Step>
+
+  <Step title="Adopt the change in the extension">
+    Update the Copilot Chat extension code to use the new API shape. This may involve renaming method calls, updating call sites to match changed parameters, or adding required static contributions to `package.json`.
+  </Step>
+
+  <Step title="Update enabledApiProposals in package.json">
+    Add or update the version suffix on the relevant entry in `enabledApiProposals` in the extension's `package.json`. This tells VS Code that the extension requires at least that version of the proposal:
+
+    ```json
+    {
+      "enabledApiProposals": [
+        "lmTools@2",
+        "chatParticipantAdditions@1"
+      ]
+    }
+    ```
+
+    VS Code will refuse to activate the extension if the running build does not provide the required proposal version, preventing silent runtime failures.
+  </Step>
+</Steps>
+
+### Examples of breaking changes
+
+- Renaming a method that the extension calls (for example, `invokeTool` → `callTool`)
+- Changing the parameters of an existing method (for example, adding a required argument)
+- Adding a required static contribution point to `package.json` for a proposal the extension already uses
+
+## Making additive changes to proposed API
+
+An additive change adds new capability without removing or altering existing API. An older version of the extension will still work correctly with the new VS Code build, so no version bump is needed on the proposal. However, once the extension starts *using* the new API, it must declare that it requires a VS Code build new enough to provide it.
+
+<Steps>
+  <Step title="Adopt the new API in the extension">
+    Update the extension code to use the new method, response type, or interface addition.
+  </Step>
+
+  <Step title="Update the date in engines.vscode">
+    Change the date part of the `engines.vscode` field in `package.json` to match the date of the VS Code commit that introduced the additive API:
+
+    ```json
+    {
+      "engines": {
+        "vscode": "^1.91.0-20240624"
+      }
+    }
+    ```
+
+    This ensures the extension is only installed and activated on VS Code builds from that date or later. Earlier builds will not offer to install it.
+  </Step>
+</Steps>
+
+### Examples of additive changes
+
+- Adding a new response type to `ChatResponseStream`
+- Adding a new API proposal (the extension can start using it without breaking anything for users on an older build)
+- Adding a new optional method to an existing interface
+
+<Note>
+  For additive changes, you do **not** need to update the version suffix in `enabledApiProposals`. The `engines.vscode` date pin is sufficient to ensure the extension only activates where the new API is available.
+</Note>
+
+## Checking the existing pattern
+
+Before updating `enabledApiProposals`, look at the existing entries in `package.json` to understand the naming and versioning conventions in use. Proposals without a version suffix are implicitly at version 1. Proposals with a `@N` suffix require exactly that version or higher. Follow the same pattern as existing entries rather than inventing a new format.
+
+<Tip>
+  If you are unsure whether your change is breaking or additive, ask: "Would an older extension installed against this new VS Code build still work correctly?" If yes, it is additive. If no — if the extension would crash, fail to activate, or call an API that no longer exists — it is breaking.
+</Tip>

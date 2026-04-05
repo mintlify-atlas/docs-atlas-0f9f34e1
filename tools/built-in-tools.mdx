@@ -1,0 +1,241 @@
+---
+title: "Built-in tools"
+description: "Reference for all built-in language model tools provided by GitHub Copilot Chat."
+---
+
+GitHub Copilot Chat ships a set of built-in tools that cover the core agent loop: exploring your codebase, reading and writing files, running terminal commands, checking errors, and more. These tools are always available in agent mode without any additional configuration.
+
+You can enable or disable individual tools from the tool picker in the chat panel. Each tool's reference name (shown below) is the name you use in the tool picker and to reference the tool with `#` in a prompt.
+
+<AccordionGroup>
+
+  <Accordion title="codebase — Search codebase">
+    **Tool name:** `copilot_searchCodebase`
+    **Reference name:** `codebase`
+
+    Run a natural language search for relevant code or documentation comments across your workspace. For large workspaces, this returns the most relevant snippets; for small workspaces, it may return the full contents.
+
+    Use this tool when you want to find code related to a concept without knowing the exact file or symbol name.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `query` | string | Yes | The natural language query to search for. Should contain all relevant context and ideally include terms likely to appear in code, such as function names, variable names, or comments. |
+  </Accordion>
+
+  <Accordion title="symbols — Search workspace symbols">
+    **Tool name:** `copilot_searchWorkspaceSymbols`
+    **Reference name:** `symbols`
+
+    Search your workspace for code symbols using VS Code's language services. Use this when you know the name of a function, class, or variable and want to locate it quickly.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `symbolName` | string | Yes | The symbol to search for, such as a function name, class name, or variable name. |
+  </Accordion>
+
+  <Accordion title="fileSearch — Find files by glob pattern">
+    **Tool name:** `copilot_findFiles`
+    **Reference name:** `fileSearch`
+
+    Search for files in your workspace using a glob pattern. This returns matching file paths only, not their contents. Use this when you know the filename or path pattern of the files you're looking for.
+
+    Glob patterns match from the root of the workspace folder. In a multi-root workspace, scope the search to a specific folder by using its absolute path as the query.
+
+    **Examples:**
+    - `**/*.{js,ts}` — all JavaScript and TypeScript files
+    - `src/**` — all files under the top-level `src` folder
+    - `**/foo/**/*.js` — all JS files under any `foo` folder
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `query` | string | Yes | A glob pattern to match file names or paths. Can also be an absolute path to a workspace folder to scope a multi-root workspace search. |
+    | `maxResults` | number | No | Maximum number of results to return. Only set this if the default results are insufficient — it can slow down the search. |
+  </Accordion>
+
+  <Accordion title="textSearch — Search file contents">
+    **Tool name:** `copilot_findTextInFiles`
+    **Reference name:** `textSearch`
+
+    Do a fast text search across workspace files using an exact string or regular expression. Prefer regex patterns with alternation (`word1|word2|word3`) over multiple separate searches to find multiple potential terms at once.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `query` | string | Yes | The pattern to search for. Use regex alternation (e.g., `word1\|word2`) to match multiple terms in a single search. Case-insensitive. |
+    | `isRegexp` | boolean | Yes | Whether the pattern is a regular expression. |
+    | `includePattern` | string | No | Glob pattern to restrict the search to matching files (e.g., `src/folder/**`). Can also be an absolute workspace folder path. |
+    | `maxResults` | number | No | Maximum number of results to return. |
+    | `includeIgnoredFiles` | boolean | No | When `true`, includes files that would normally be excluded by `.gitignore`, other ignore files, and `files.exclude`/`search.exclude` settings. May slow down the search. |
+  </Accordion>
+
+  <Accordion title="readFile — Read file contents">
+    **Tool name:** `copilot_readFile`
+    **Reference name:** `readFile`
+
+    Read the contents of a file within a specified line range. Line numbers are 1-indexed. If the returned content is insufficient, call the tool again with a different range. Prefer larger reads over many small ones.
+
+    For binary files, `startLine` and `endLine` are interpreted as byte offsets.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `filePath` | string | Yes | Absolute path to the file to read. |
+    | `startLine` | number | Yes | The line number to start reading from (1-based). |
+    | `endLine` | number | Yes | The inclusive line number to stop reading at (1-based). |
+  </Accordion>
+
+  <Accordion title="listDirectory — List directory contents">
+    **Tool name:** `copilot_listDirectory`
+    **Reference name:** `listDirectory`
+
+    List the immediate contents of a directory. Entries ending in `/` are folders; all others are files.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `path` | string | Yes | Absolute path to the directory to list. |
+  </Accordion>
+
+  <Accordion title="vscodeAPI — Get VS Code API documentation">
+    **Tool name:** `copilot_getVSCodeAPI`
+    **Reference name:** `vscodeAPI`
+
+    Retrieve authoritative VS Code API documentation for extension development. This tool covers stable and proposed APIs, contribution points, activation events, extension lifecycle, and best practices.
+
+    Use this when you need documentation for a specific VS Code API, interface, or extension capability. This tool is for **extension development only** — it is not intended for general programming questions or for using VS Code as an editor.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `query` | string | Yes | The query to search VS Code documentation for. Include specific API names, interfaces, or extension feature context. |
+  </Accordion>
+
+  <Accordion title="problems — Get compile and lint errors">
+    **Tool name:** `copilot_getErrors`
+    **Reference name:** `problems`
+
+    Retrieve compile or lint errors from the VS Code Problems panel, for a specific file or across all files in the workspace. Use this after making edits to validate your changes, or when the user reports errors they can see.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `filePaths` | string[] | No | Absolute paths to files or folders to check. Omit to retrieve errors for all files. |
+  </Accordion>
+
+  <Accordion title="changes — Get git diffs">
+    **Tool name:** `copilot_getChangedFiles`
+    **Reference name:** `changes`
+
+    Get git diffs of current file changes in a git repository. You can filter by staged changes, unstaged changes, or files with merge conflicts.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `repositoryPath` | string | No | Absolute path to the git repository. Defaults to the active git repository. |
+    | `sourceControlState` | string[] | No | Filter by git state. Allowed values: `"staged"`, `"unstaged"`, `"merge-conflicts"`. Returns all states if omitted. |
+  </Accordion>
+
+  <Accordion title="insertEdit — Insert code edits into a file">
+    **Tool name:** `copilot_insertEdit`
+    **Reference name:** `insertEdit`
+
+    Insert new or modified code into an existing file. Call this tool once per file that needs to be changed, even if there are multiple edits for that file. Use concise code with `// ...existing code...` comments to indicate unchanged regions — you do not need to reproduce the entire file.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `explanation` | string | Yes | A short description of the edit being made. Generate this first. |
+    | `filePath` | string | Yes | Absolute path to the file to edit. |
+    | `code` | string | Yes | The code change to apply. Use `// ...existing code...` to mark unchanged regions. |
+  </Accordion>
+
+  <Accordion title="applyPatch — Apply a patch to a file">
+    **Tool name:** `copilot_applyPatch`
+    **Reference name:** `applyPatch`
+
+    Apply a structured diff/patch to one or more text files using a V4A-style patch format. Do not use this tool for Jupyter notebooks — use `editNotebook` instead.
+
+    The patch must be wrapped in `*** Begin Patch` / `*** End Patch` markers, with each file change preceded by `*** [ACTION] File: /absolute/path/to/file` where `ACTION` is `Add`, `Update`, or `Delete`.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `input` | string | Yes | The full patch string, including begin/end markers and file headers. |
+    | `explanation` | string | Yes | A short description of what the patch aims to achieve. |
+  </Accordion>
+
+  <Accordion title="replaceString — Replace a string in a file">
+    **Tool name:** `copilot_replaceString`
+    **Reference name:** `replaceString`
+
+    Replace a single exact occurrence of a string in an existing file. You must provide the exact literal text to replace, including all whitespace and indentation, along with at least three lines of surrounding context to uniquely identify the location. This tool replaces exactly one occurrence per call.
+
+    <Note>
+    This tool is disabled when the `github.copilot.chat.disableReplaceTool` setting is `true`.
+    </Note>
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `filePath` | string | Yes | Absolute path to the file to edit. |
+    | `oldString` | string | Yes | The exact literal text to replace, including all whitespace and surrounding context lines. Must uniquely identify one location in the file. |
+    | `newString` | string | Yes | The exact literal text to substitute in place of `oldString`. |
+  </Accordion>
+
+  <Accordion title="createFile — Create a new file">
+    **Tool name:** `copilot_createFile`
+    **Reference name:** `createFile`
+
+    Create a new file in the workspace with specified content. The tool automatically creates any missing parent directories. Do not use this tool to edit a file that already exists — use `insertEdit` or `replaceString` instead.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `filePath` | string | Yes | Absolute path to the file to create. |
+    | `content` | string | Yes | The content to write to the new file. |
+  </Accordion>
+
+  <Accordion title="createDirectory — Create a directory">
+    **Tool name:** `copilot_createDirectory`
+    **Reference name:** `createDirectory`
+
+    Create a new directory (and any missing parent directories) in the workspace, equivalent to `mkdir -p`. You do not need to call this before using `createFile` — that tool creates parent directories automatically.
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `dirPath` | string | Yes | Absolute path to the directory to create. |
+  </Accordion>
+
+  <Accordion title="fetch — Fetch a web page">
+    **Tool name:** `copilot_fetchWebPage`
+    **Reference name:** `fetch`
+
+    Fetch the main content from one or more web pages. Use this when the user is asking about the content of a specific URL, or when external documentation needs to be retrieved to answer a question.
+
+    <Note>
+    This tool is not available in the VS Code for the Web environment.
+    </Note>
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `urls` | string[] | Yes | An array of URLs to fetch content from. |
+    | `query` | string | Yes | A description of what to look for in the fetched content. |
+  </Accordion>
+
+  <Accordion title="testFailure — Get test failure information">
+    **Tool name:** `copilot_testFailure`
+    **Reference name:** `testFailure`
+
+    Include test failure information in the conversation context. Use this when helping to diagnose or fix failing tests — it pulls in the relevant failure details so the model can reason about what went wrong.
+
+    This tool takes no input parameters.
+  </Accordion>
+
+  <Accordion title="newWorkspace — Scaffold a new workspace">
+    **Tool name:** `copilot_createNewWorkspace`
+    **Reference name:** `newWorkspace`
+
+    Get comprehensive setup steps for creating a complete project structure in a VS Code workspace. This tool is designed for full project initialization — not for creating individual files within an existing project.
+
+    Use this when setting up TypeScript projects, React apps, Node.js servers, Next.js projects, VS Code extensions, MCP servers, and other framework-based projects from scratch.
+
+    <Note>
+    This tool is only available when the `github.copilot.chat.newWorkspaceCreation.enabled` setting is `true`.
+    </Note>
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `query` | string | Yes | A clear and concise description of the workspace or project the user wants to create. |
+  </Accordion>
+
+</AccordionGroup>

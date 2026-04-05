@@ -1,0 +1,121 @@
+---
+title: "Agent mode"
+description: "Let Copilot autonomously plan tasks, edit files, run terminal commands, and self-correct errors."
+---
+
+Agent mode lets GitHub Copilot complete complex, multi-step coding tasks on your behalf. Instead of responding to a single prompt and stopping, an agent continuously plans work, calls tools, observes outcomes, and adjusts its approach until the task is done — or until it needs your input.
+
+## How agent mode works
+
+When you send a message in agent mode, Copilot follows a planning and execution loop:
+
+<Steps>
+  <Step title="Plan the work">
+    Copilot analyzes your request and the current state of your workspace to decide what steps are needed. For larger tasks it may break the work into sub-goals and process them sequentially.
+  </Step>
+  <Step title="Call tools">
+    Copilot executes tools to make progress: reading files, writing edits, running terminal commands, or searching the codebase. Each tool call produces an observation that feeds into the next planning step.
+  </Step>
+  <Step title="Observe and self-correct">
+    After each action, Copilot checks whether the outcome was expected. If a build fails, tests break, or an edit introduces an error, Copilot reads the error output and attempts a fix without requiring you to intervene. This self-correction loop runs until the task succeeds or the tool call limit is reached.
+  </Step>
+  <Step title="Report and hand off">
+    When the task is complete, Copilot summarizes what it did and presents the changes for your review. You accept, reject, or modify the proposed edits before they are persisted.
+  </Step>
+</Steps>
+
+## Activating agent mode
+
+<Tabs>
+  <Tab title="From the chat panel">
+    1. Open the chat panel with `Ctrl+Alt+I` / `Cmd+Option+I`.
+    2. Click the mode dropdown in the chat input (it may show **Ask** or **Edit** by default).
+    3. Select **Agent**.
+    4. Type your task and press `Enter`.
+  </Tab>
+  <Tab title="From the Command Palette">
+    1. Open the Command Palette with `Ctrl+Shift+P` / `Cmd+Shift+P`.
+    2. Run **GitHub Copilot: Open Agent Mode**.
+    3. Type your task in the chat input.
+  </Tab>
+</Tabs>
+
+## What agents can do
+
+Agents have access to a set of built-in tools and can also call tools provided by MCP servers and VS Code extensions.
+
+<CardGroup cols={2}>
+  <Card title="Edit files" icon="file-pen">
+    Create, modify, and delete files anywhere in your workspace. Copilot uses targeted string-replacement and patch-based edits to minimize diff noise.
+  </Card>
+  <Card title="Run terminal commands" icon="terminal">
+    Execute build scripts, test runners, package manager commands, and other shell commands to verify that changes work correctly.
+  </Card>
+  <Card title="Search the codebase" icon="search">
+    Perform semantic and text-based searches across your workspace to locate relevant files, symbols, and patterns before making changes.
+  </Card>
+  <Card title="Use MCP tools" icon="plug">
+    Call tools registered by Model Context Protocol (MCP) servers — for example, querying a database, fetching from an external API, or interacting with a third-party service.
+  </Card>
+</CardGroup>
+
+## Managing agent sessions
+
+You can run multiple agent sessions in parallel and manage them from a single view.
+
+- Open the **Sessions** view in the Copilot sidebar to see all active and recent sessions.
+- Each session shows its current status, the files it has modified, and a history of tool calls.
+- Switch between sessions without interrupting ongoing work.
+- Resume a previous session by clicking on it — the full conversation and edit history are preserved.
+
+<Tip>
+  When working on a large feature, consider breaking it into parallel sessions: one agent to implement the backend logic, another to update the tests, and a third to update documentation. Then review and merge the results.
+</Tip>
+
+## Cloud agents
+
+Cloud agents run in GitHub's infrastructure rather than locally in VS Code. You can delegate a task to a cloud agent, and it will:
+
+1. Create a new branch in your repository.
+2. Implement the requested changes autonomously.
+3. Open a pull request for your team to review.
+
+To delegate to a cloud agent, select **Assign to Copilot** from the agent mode menu or from a GitHub issue. You can monitor progress in the **Sessions** view and in the pull request on GitHub.
+
+## Plan agent
+
+Before writing any code, you can ask Copilot to produce a structured implementation plan.
+
+<Steps>
+  <Step title="Switch to Plan mode">
+    Select **Plan** from the mode dropdown in the chat input.
+  </Step>
+  <Step title="Describe the feature or task">
+    Give a high-level description of what you want to build. Copilot will ask clarifying questions if it needs more information.
+  </Step>
+  <Step title="Review the plan">
+    Copilot produces a step-by-step implementation plan with file-level details. Review it and request adjustments before any code is written.
+  </Step>
+  <Step title="Hand off to an implementation agent">
+    Once you are satisfied with the plan, switch to **Agent** mode and send the plan as context. Copilot will execute the plan.
+  </Step>
+</Steps>
+
+## Tool confirmation
+
+Before running operations that could have side effects — such as deleting files, running shell commands, or calling external APIs — Copilot asks for your approval.
+
+A confirmation dialog shows:
+- The tool being called
+- The exact arguments (e.g., the command string for terminal operations)
+- An **Allow** or **Cancel** option
+
+You can also configure certain tools to run without confirmation for the duration of a session by selecting **Always allow for this session**.
+
+<Warning>
+  Review all file edits and terminal commands before approving them. Agent mode can make sweeping changes across your workspace. Use the diff view to inspect each proposed edit and run your test suite after an agent session completes.
+</Warning>
+
+<Tip>
+  If you encounter unexpected agent behavior or want to report a bug, open the Chat Debug View by running **GitHub Copilot: Open Chat Debug View** from the Command Palette. Attach the log output when filing an issue at https://github.com/microsoft/vscode-copilot-release/issues.
+</Tip>

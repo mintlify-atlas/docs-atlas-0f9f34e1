@@ -1,0 +1,80 @@
+---
+title: "Tools overview"
+description: "Understand how language model tools work in GitHub Copilot's agent mode."
+---
+
+Tools are functions that the AI model can call during a conversation to interact with VS Code, your filesystem, the web, and other external resources. Instead of only generating text, the model can invoke tools to read files, search your codebase, apply edits, run terminal commands, and more — then use the results to continue reasoning and responding.
+
+In agent mode, Copilot autonomously decides which tools to call, in what order, and with what arguments based on your request. You do not need to invoke tools manually.
+
+## How tools are invoked
+
+When you send a message in agent mode, the model evaluates the task and selects the most relevant tools to make progress. It may call several tools in sequence — for example, searching the codebase to understand the existing structure, reading a specific file, then applying an edit. Each tool call produces a result that the model incorporates before deciding what to do next.
+
+The chat UI shows each tool invocation as it happens, so you can follow along with what Copilot is doing. Tool results may be expandable, showing you the files or output that the model received.
+
+## Tool sources
+
+Copilot draws tools from three sources:
+
+<CardGroup cols={3}>
+  <Card title="Built-in tools" icon="wrench" href="/tools/built-in-tools">
+    Tools shipped with the GitHub Copilot Chat extension itself. These cover the core agent loop: searching, reading, editing, running terminals, checking errors, and more.
+  </Card>
+  <Card title="VS Code extension tools" icon="puzzle">
+    Other VS Code extensions can contribute their own language model tools. When those extensions are installed and active, their tools become available to Copilot in agent mode.
+  </Card>
+  <Card title="MCP server tools" icon="server">
+    Tools from Model Context Protocol (MCP) servers configured in your workspace or user settings. MCP servers can expose arbitrary tools — for example, querying a database, calling an API, or interacting with a CI system.
+  </Card>
+</CardGroup>
+
+## The tool picker
+
+You can control which tools Copilot is allowed to use from the tool picker in the chat panel. Click the **Tools** button (or the wrench icon) in the chat input area to open a list of all available tools. You can enable or disable individual tools, or entire toolsets, without changing any settings files.
+
+<Tip>
+If Copilot keeps reaching for a tool you don't want it to use — for example, a terminal tool in a context where you only want code edits — disable it in the tool picker for that session.
+</Tip>
+
+Disabling a tool does not uninstall it. It only prevents the model from calling it until you re-enable it.
+
+## Tool confirmations
+
+Some tools have side effects that can't be undone — running a terminal command is the clearest example. For these tools, Copilot pauses and asks for your approval before proceeding. The confirmation message describes exactly what the tool is about to do, including any commands or arguments it will use.
+
+<Warning>
+Always review tool confirmation messages before approving. The model is working autonomously, and confirming a terminal command means it will be executed in your environment.
+</Warning>
+
+You can approve or cancel each confirmation individually. If you cancel, Copilot stops that tool invocation and may try an alternative approach.
+
+## Toolsets
+
+Related tools can be grouped into **toolsets** using `contributes.languageModelToolSets` in an extension's `package.json`. Toolsets appear as a single entry in the tool picker, letting you enable or disable a group of related tools at once.
+
+For example, a set of notebook tools (edit cell, run cell, get output) might be grouped into a single "Notebooks" toolset so you can turn the entire group on or off without managing each tool individually.
+
+Extension authors can also reference toolsets from chat modes, making it easy to configure a mode that includes exactly the right set of tools for a given workflow.
+
+## How tools appear in the chat UI
+
+Each tool invocation shows up as a message in the chat thread while the agent is running. The message typically includes:
+
+- An **invocation message** describing what the tool is doing (e.g., "Searching codebase for authentication logic").
+- An **expandable result** you can open to see the raw output the model received — for example, a list of matched files or the contents of a file that was read.
+
+For tools that return file references (such as a file search or a read file), the result may include clickable file widgets that open the file directly in the editor.
+
+After the agent finishes, the full sequence of tool calls is visible in the conversation, so you can understand exactly what steps Copilot took to produce its response.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Built-in tools" icon="wrench" href="/tools/built-in-tools">
+    Browse the full reference for all tools shipped with GitHub Copilot Chat.
+  </Card>
+  <Card title="Model-specific tools" icon="cpu" href="/tools/model-specific-tools">
+    Learn how to register tools that only activate for certain AI models.
+  </Card>
+</CardGroup>

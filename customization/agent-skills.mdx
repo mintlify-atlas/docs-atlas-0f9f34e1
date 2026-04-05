@@ -1,0 +1,123 @@
+---
+title: "Agent skills"
+description: "Teach Copilot new specialized capabilities by defining custom tool-like skills."
+---
+
+Agent skills are discrete, named capabilities that Copilot can invoke during an agent session. They work like tools — each skill has a name, a description, and a defined input schema — but they are contributed by VS Code extensions or surfaced through MCP servers rather than being built into the extension itself.
+
+## Skills vs. built-in tools
+
+Copilot ships with a set of built-in tools for common development tasks. These appear in the tool picker under their reference names:
+
+| Reference name | What it does |
+|---|---|
+| `codebase` | Semantic search across the workspace |
+| `readFile` | Reads a file within a line range |
+| `fileSearch` | Finds files by glob pattern |
+| `textSearch` | Searches file contents by text or regex |
+| `listDirectory` | Lists directory contents |
+| `insertEdit` | Applies code edits to a file |
+| `replaceString` | Replaces an exact string in a file |
+| `createFile` | Creates a new file |
+| `problems` | Retrieves compile and lint errors |
+| `changes` | Gets git diffs |
+| `fetch` | Fetches content from a web URL |
+
+Skills extend this set. An extension can contribute a skill that calls a proprietary API, runs a specialized linter, queries an internal knowledge base, or wraps a complex multi-step operation behind a single named capability. From Copilot's perspective, a skill is indistinguishable from a built-in tool — the agent picks the right one based on what the task requires.
+
+<Note>
+  Skills require agent mode to be active. In ask or edit mode, Copilot does not invoke tools or skills.
+</Note>
+
+## Selecting skills with the tool picker
+
+You control which skills are available in a session using the tool picker in the chat panel.
+
+<Steps>
+  <Step title="Switch to agent mode">
+    At the bottom of the Copilot Chat input box, open the mode selector and choose **Agent**.
+  </Step>
+  <Step title="Open the tool picker">
+    Click the **tools icon** (wrench) next to the mode selector. A panel lists all available tools and skills, grouped by their source (built-in, MCP server, or extension).
+  </Step>
+  <Step title="Enable or disable skills">
+    Toggle individual skills on or off. Disabled skills are not passed to the model, which reduces context size and prevents unintended tool calls.
+  </Step>
+</Steps>
+
+## Referencing a skill in a prompt
+
+You can explicitly attach a skill as context using `#toolName` in your chat message. This signals to Copilot that the skill is relevant and increases the likelihood it will be invoked.
+
+```
+Using #mySearchTool, find all references to the deprecated `fetchUser` function.
+```
+
+Copilot parses the `#` reference, attaches the skill's definition to the prompt context, and calls it when appropriate.
+
+## Toolsets
+
+A toolset is a named group of related skills. Extensions can declare a toolset to give users a convenient way to enable or disable several skills at once instead of toggling them individually.
+
+Toolsets are defined in an extension's `package.json` under `contributes.languageModelToolSets`:
+
+```json
+"contributes": {
+  "languageModelToolSets": [
+    {
+      "id": "my-extension.databaseTools",
+      "label": "Database tools",
+      "description": "Skills for querying and inspecting the project database.",
+      "tools": ["my-extension.runQuery", "my-extension.describeSchema", "my-extension.explainPlan"]
+    }
+  ]
+}
+```
+
+In the tool picker, toolsets appear as a single toggle. Enabling a toolset enables all its member skills simultaneously.
+
+## Creating a custom skill
+
+Custom skills are contributed by VS Code extensions using the `contributes.languageModelTools` contribution point. A minimal skill contribution in `package.json` looks like this:
+
+```json
+"contributes": {
+  "languageModelTools": [
+    {
+      "name": "my-extension_runQuery",
+      "displayName": "Run database query",
+      "modelDescription": "Executes a read-only SQL query against the project database and returns the results as JSON.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The SQL SELECT statement to execute."
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+}
+```
+
+The extension then registers a handler using the VS Code API:
+
+```typescript
+vscode.lm.registerTool('my-extension_runQuery', {
+  async invoke(options, token) {
+    const { query } = options.input as { query: string };
+    const results = await runReadOnlyQuery(query);
+    return new vscode.LanguageModelToolResult([
+      new vscode.LanguageModelTextPart(JSON.stringify(results, null, 2))
+    ]);
+  }
+});
+```
+
+Once registered, the skill appears in the tool picker and Copilot can call it during agent sessions.
+
+<Tip>
+  Write the `modelDescription` field carefully — Copilot's model reads it to decide when and how to use the skill. A precise description that explains the skill's purpose, expected input, and output format leads to more reliable tool selection.
+</Tip>

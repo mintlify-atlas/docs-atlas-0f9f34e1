@@ -1,0 +1,165 @@
+---
+title: "Prompt development"
+description: "Use the TSX-based prompt composition framework to craft effective LLM prompts."
+---
+
+The Copilot Chat extension uses a TSX-based framework for composing the messages sent to the language model. Rather than building prompts from raw string concatenation, you declare a tree of TSX components. The prompt renderer walks that tree, resolves priorities, and produces the final array of `SystemMessage`, `UserMessage`, and `AssistantMessage` objects that gets sent to the Copilot API.
+
+## Why TSX prompts
+
+### Dynamic composition and token budget management
+
+Prompts are not static strings — they are assembled at runtime from many sources: system instructions, safety rules, conversation history, tool results, user context, and more. The TSX framework lets each piece of the prompt be a self-contained component that can be reasoned about, tested, and reused independently.
+
+Every node in the prompt tree carries a `priority` value. If the combined token count of all messages would exceed the model's context window, the renderer prunes messages starting from the lowest priority, preserving the order in which they were declared in the surviving messages. This means you never need to manually trim prompts — you declare what matters most and let the renderer handle the rest.
+
+### Priority system
+
+Priority works like a z-index: **higher number = higher priority**. When the token budget is tight, messages with the lowest `priority` values are evicted first. A few things to keep in mind:
+
+- Priority is set per prompt element, not per character or token.
+- If two messages share the same priority and are both candidates for eviction, the one declared *later* in the tree survives — the earlier one is evicted first.
+- Setting a very high priority on a prompt element does not guarantee it will always be included; it only guarantees it will be the last to be dropped relative to other elements.
+
+### Transparency and reuse
+
+Because each intent controls its own `SystemMessage`, `UserMessage`, and `AssistantMessage` components, the full prompt is always visible and auditable. Common elements like `SafetyRules` can be composed in from shared components without hiding what is being sent to the model. This makes RAI compliance traceable rather than implicit.
+
+## Quickstart
+
+<Steps>
+  <Step title="Define a PromptElement extending class with props and render()">
+    Create an interface for your props that extends `BasePromptElementProps`, then write a class that extends `PromptElement` with those props. Implement a synchronous `render()` method that returns the chat messages your prompt needs.
+
+    ```typescript
+    import { BasePromptElementProps, PromptElement, SystemMessage, UserMessage } from '@vscode/prompt-tsx';
+
+    interface CatPromptProps extends BasePromptElementProps {
+      query: string;
+    }
+
+    export class CatPrompt extends PromptElement<CatPromptProps, void> {
+      render() {
+        return (
+          <>
+            <SystemMessage>
+              Respond to all messages as if you were a cat.
+            </SystemMessage>
+            <UserMessage>
+              {this.props.query}
+            </UserMessage>
+          </>
+        );
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Use SystemMessage, UserMessage, and AssistantMessage components">
+    These three components map directly to the message roles accepted by the OpenAI-compatible API. Text nested inside them is converted to the appropriate role. You can nest other prompt elements inside them, and those elements will be flattened when the prompt is rendered.
+
+    Use `AssistantMessage` to inject synthetic assistant turns into the conversation, which is useful for few-shot examples or for reconstructing conversation history.
+  </Step>
+
+  <Step title="Include SafetyRules in SystemMessage for RAI compliance">
+    The `SafetyRules` component renders the standard Responsible AI guidelines. It should be included inside a `SystemMessage` in any user-facing prompt. Because it is a prompt element with its own priority, it can be composed in without hardcoding the safety text into every intent.
+
+    ```typescript
+    import { SafetyRules } from '../safety/safetyRules';
+
+    render() {
+      return (
+        <>
+          <SystemMessage>
+            <SafetyRules />
+            Your feature-specific instructions go here.
+          </SystemMessage>
+          <UserMessage>{this.props.query}</UserMessage>
+        </>
+      );
+    }
+    ```
+  </Step>
+
+  <Step title="Create a PromptRenderer and call render()">
+    To produce the final message array, instantiate a `PromptRenderer` and call `render()`. The renderer is constructed with a `ServicesAccessor`, an `IChatEndpoint`, your prompt class, and the props to pass to it.
+
+    ```typescript
+    import { PromptRenderer } from '../base/promptRenderer';
+
+    class CatIntentInvocation implements IIntentInvocation {
+      constructor(
+        private readonly accessor: ServicesAccessor,
+        private readonly endpoint: IChatEndpoint,
+      ) {}
+
+      async buildPrompt(
+        { query }: IBuildPromptContext,
+        progress: vscode.Progress<vscode.ChatResponseProgressPart | vscode.ChatResponseReferencePart>,
+        token: vscode.CancellationToken
+      ): Promise<RenderPromptResult> {
+        const renderer = new PromptRenderer(
+          this.accessor,
+          this.endpoint,
+          CatPrompt,
+          { query }
+        );
+        return renderer.render(progress, token);
+      }
+    }
+    ```
+
+    `PromptRenderer.render()` returns a `RenderPromptResult` containing the final messages array suitable for sending to the Copilot API via `ChatMLFetcher`.
+  </Step>
+</Steps>
+
+## The prepare() method
+
+If your prompt element needs to perform asynchronous work before it can render — for example, querying VS Code extension APIs, fetching additional context, or issuing a secondary Copilot request for chunk reranking — implement the optional `prepare()` method.
+
+`prepare()` is called before `render()`. Its return value is passed back to `render()` as the second generic type parameter (the "state" argument). This keeps `render()` synchronous while still allowing async setup:
+
+```typescript
+interface MyPromptState {
+  resolvedFiles: string[];
+}
+
+export class MyPrompt extends PromptElement<MyPromptProps, MyPromptState> {
+  async prepare(): Promise<MyPromptState> {
+    const resolvedFiles = await this.props.fileService.listFiles();
+    return { resolvedFiles };
+  }
+
+  render(_: void, state: MyPromptState) {
+    return (
+      <>
+        <SystemMessage>
+          The following files are available:
+          {state.resolvedFiles.join(', ')}
+        </SystemMessage>
+        <UserMessage>{this.props.query}</UserMessage>
+      </>
+    );
+  }
+}
+```
+
+## Important gotchas
+
+<Warning>
+  Newlines are **not** preserved in JSX string literals when rendered. If you need an explicit line break in the output sent to the model, use the built-in `<br />` component instead of `\n` in your strings.
+</Warning>
+
+<Note>
+  When two prompt messages share the same priority and both become candidates for eviction because the token budget is exceeded, the message declared **earlier** in the tree is evicted first. It is not possible for a subtree declared earlier to evict a subtree declared later at the same priority level. Design priority values so that ties are intentional, not accidental.
+</Note>
+
+## Tips for effective prompt development
+
+<Tip>
+  Read the rendered prompt top to bottom as if you were the model. Does the story it tells make sense? Are the instructions coherent? Are tool results formatted consistently with surrounding context? This is the single most effective way to improve prompt quality.
+</Tip>
+
+<Tip>
+  Use the **Show Chat Debug View** command in VS Code while developing. It opens a tree view showing the exact prompt sent to the model for each request, including which messages were pruned and why. There is also a prompt-tsx debug view that opens in the Simple Browser and lets you inspect the component tree visually. Always verify the rendered output matches your expectations before shipping.
+</Tip>

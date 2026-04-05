@@ -1,0 +1,100 @@
+---
+title: "Testing"
+description: "Run unit tests, integration tests, and simulation tests for GitHub Copilot Chat."
+---
+
+## Test types
+
+The project has three categories of tests, each with a different scope and runtime environment.
+
+<CardGroup cols={1}>
+  <Card title="Unit tests" icon="microscope">
+    Run in plain Node.js. Fast, isolated, and suitable for testing pure logic without a VS Code instance.
+  </Card>
+  <Card title="Integration tests" icon="plug">
+    Run inside a VS Code extension host. Required for code that calls VS Code APIs or interacts with the editor.
+  </Card>
+  <Card title="Simulation tests" icon="brain">
+    Make real requests to the Copilot API and invoke LLMs. Each test runs 10 times to account for the stochastic nature of model outputs.
+  </Card>
+</CardGroup>
+
+## Running tests
+
+<Tabs>
+  <Tab title="Unit tests">
+    ```bash
+    npm run test:unit
+    ```
+
+    Unit tests run in Node.js without starting VS Code. They cover utilities, prompt rendering logic, and other modules that do not depend on VS Code runtime APIs.
+
+    If tests fail unexpectedly, verify that you are using the correct Node version (`node >= 22.14.0`) and that Git LFS is properly initialized:
+
+    ```bash
+    git lfs pull
+    ```
+  </Tab>
+  <Tab title="Integration tests">
+    ```bash
+    npm run test:extension
+    ```
+
+    Integration tests launch a VS Code Extension Development Host, load the extension, and execute tests inside that environment. Use these tests for code that calls `vscode.*` APIs at runtime, such as workspace operations, editor commands, or chat participant handlers.
+  </Tab>
+  <Tab title="Simulation tests">
+    ```bash
+    npm run simulate
+    ```
+
+    Simulation tests reach live Copilot API endpoints and run each test case 10 times to capture the distribution of LLM outputs. Results are compared against a stored baseline. See the sections below for details on the cache and baseline before running these tests.
+
+    <Warning>
+      Simulation tests make real requests to Copilot API endpoints. They are computationally expensive and consume API quota. Always use the cache when available — see [Simulation test cache](#simulation-test-cache) below.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Simulation test cache
+
+Because LLM outputs are both random and costly, simulation test results are cached inside the repository at `test/simulation/cache/layers`. Running `npm run simulate` will use the cache when available, making test runs faster and deterministic.
+
+When you add new simulation tests, you must populate the cache by running `npm run simulate` locally. This creates new cache layer files under `test/simulation/cache/layers`.
+
+<Warning>
+  **Community contributors cannot create new cache layers.** Cache layers must be created on a VS Code team member's development machine. If a pull request from a community contributor includes new cache layer files, the PR will fail CI. A VS Code team member must delete the contributed layers and recreate them before the PR can be merged.
+</Warning>
+
+To verify that the cache is fully populated before submitting a PR, run:
+
+```bash
+npm run simulate-require-cache
+```
+
+This command fails if any simulation test would need to make a live API call instead of reading from the cache, giving you an early signal before CI does.
+
+## Baseline file
+
+Simulation test results are snapshotted in `test/simulation/baseline.json`. This file encodes the expected quality metrics of the test suite at any point in time. PRs that produce uncommitted changes to the baseline will fail CI.
+
+If you intentionally change behavior that affects simulation test results and want to accept the new outputs as the new baseline, update the file and include it in your commit:
+
+```bash
+npm run simulate-update-baseline
+```
+
+Review the diff in `test/simulation/baseline.json` carefully before committing. A regression in quality metrics (a score dropping below baseline) should be investigated, not accepted.
+
+## Troubleshooting test failures
+
+<AccordionGroup>
+  <Accordion title="Tests fail with unexpected errors">
+    Confirm you are on the correct Node version (`node >= 22.14.0`). Then run `git lfs pull` to ensure all LFS-tracked test assets are present locally. Missing LFS files are a common cause of silent test failures.
+  </Accordion>
+  <Accordion title="Simulation tests fail on cache validation">
+    Run `npm run simulate-require-cache` to identify which tests are missing cache entries. If you are a VS Code team member, run `npm run simulate` to populate the cache, then commit the new files in `test/simulation/cache/layers`. If you are a community contributor, note the missing cache tests in your PR description so a team member can populate them.
+  </Accordion>
+  <Accordion title="CI fails with uncommitted baseline changes">
+    If your change affects LLM output quality, run `npm run simulate-update-baseline` locally, review the diff in `test/simulation/baseline.json`, and include the updated file in your commit. Do not accept a baseline regression without understanding the cause.
+  </Accordion>
+</AccordionGroup>

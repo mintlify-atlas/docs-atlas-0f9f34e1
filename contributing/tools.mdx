@@ -1,0 +1,275 @@
+---
+title: "Building tools"
+description: "Add new language model tools to the Copilot agent loop."
+---
+
+Copilot agent mode can invoke tools to read files, run searches, execute terminal commands, and more. Tools are registered through VS Code's [Language Model Tool API](https://code.visualstudio.com/api/extension-guides/tools) and declared in `package.json` so that VS Code can surface them in the tool picker and pass them to the agent on each `ChatRequest`.
+
+## When to build a new tool
+
+Before writing a new tool, ask whether one is truly needed. Built-in tools should be added only when:
+
+- The capability is related to **core VS Code functionality** or the core search/edit/terminal agent loop.
+- It is needed for common out-of-the-box scenarios that cannot be handled by a terminal command.
+- It cannot be contributed from another extension or an MCP server instead.
+
+Also check whether an existing tool already covers the use case. If your tool takes similar input or operates on similar concepts to an existing one, align with it in terminology and input shape so the model can understand how to use them together without confusion.
+
+## Static declaration in package.json
+
+Every tool must be declared in `package.json` under `contributes.languageModelTools` before it can be registered at runtime. This declaration is what VS Code reads to populate the tool picker and build the model-facing tool list.
+
+```json
+{
+  "contributes": {
+    "languageModelTools": [
+      {
+        "name": "my_tool",
+        "toolReferenceName": "myTool",
+        "displayName": "My Tool",
+        "userDescription": "A human-readable description shown in the tool picker.",
+        "modelDescription": "...",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "Absolute path to the file to read."
+            }
+          },
+          "required": ["filePath"]
+        }
+      }
+    ]
+  }
+}
+```
+
+### Writing an effective modelDescription
+
+`modelDescription` is the text the LLM reads to decide whether and when to call your tool. It is **not** localized. Be precise and complete:
+
+- **What the tool does** — describe the action concretely, not abstractly.
+- **What it returns** — describe the shape and content of the result so the model knows what to expect.
+- **When to use it** — name the situations where this tool is the right choice.
+- **When not to use it** — if there are cases where a different tool is preferred, say so explicitly to avoid ambiguity.
+
+A vague `modelDescription` leads to the model calling your tool at the wrong time or not at all.
+
+### Registering in a toolset
+
+New tools should be added to a toolset in `contributes.languageModelToolSets`. Toolsets let users and modes enable or disable groups of related tools together.
+
+```json
+{
+  "contributes": {
+    "languageModelToolSets": [
+      {
+        "name": "myToolset",
+        "displayName": "My Toolset",
+        "tools": ["my_tool"]
+      }
+    ]
+  }
+}
+```
+
+## Tool implementation steps
+
+<Steps>
+  <Step title="Add an entry in package.json contributes.languageModelTools">
+    Fill out `name`, `toolReferenceName`, `displayName`, `userDescription`, `modelDescription`, and `inputSchema` as described above. Think carefully about which input properties are `required` — the model will treat omitted required fields as errors.
+  </Step>
+
+  <Step title="Add to toolNames.ts">
+    Open `src/extension/tools/common/toolNames.ts` and add your tool to the `ToolName` and `ContributedToolName` enums. Also update `contributedToolNameToToolNames` following the naming patterns of existing tools.
+
+    Tool names should be clear and start with a verb: `read_file`, `grep_search`, `run_in_terminal`. This convention makes the model's tool selection more reliable.
+  </Step>
+
+  <Step title="Implement vscode.LanguageModelTool or ICopilotTool">
+    Create your tool file in `src/extension/tools/node/`. A typical tool implements `vscode.LanguageModelTool`:
+
+    ```typescript
+    import * as vscode from 'vscode';
+
+    interface IMyToolInput {
+      filePath: string;
+    }
+
+    export class MyTool implements vscode.LanguageModelTool<IMyToolInput> {
+      async prepareInvocation(
+        options: vscode.LanguageModelToolInvocationPrepareOptions<IMyToolInput>,
+        token: vscode.CancellationToken
+      ): Promise<vscode.PreparedToolInvocation> {
+        return {
+          invocationMessage: new vscode.MarkdownString(`Reading \`${options.input.filePath}\``),
+        };
+      }
+
+      async invoke(
+        options: vscode.LanguageModelToolInvocationOptions<IMyToolInput>,
+        token: vscode.CancellationToken
+      ): Promise<vscode.LanguageModelToolResult> {
+        // Implementation here
+        return new vscode.LanguageModelToolResult([
+          new vscode.LanguageModelTextPart('result text'),
+        ]);
+      }
+    }
+    ```
+
+    If your tool needs additional capabilities (custom UI behavior, access to Copilot-internal services), implement `ICopilotTool` instead. The interface extends `vscode.LanguageModelTool` with extra hooks.
+  </Step>
+
+  <Step title="Call ToolRegistry.registerTool(YourTool)">
+    At the bottom of your tool file, register it with the tool registry:
+
+    ```typescript
+    import { ToolRegistry } from '../toolRegistry';
+
+    ToolRegistry.registerTool(MyTool);
+    ```
+  </Step>
+
+  <Step title="Import in allTools.ts">
+    Add an import for your tool file in `src/extension/tools/node/allTools.ts`. This ensures the registration side-effect runs when the extension activates.
+  </Step>
+</Steps>
+
+## Input validation
+
+Input is automatically validated against the `inputSchema` declared in `package.json` before your tool's `invoke()` is called, so you do not need to repeat structural validation inside the tool.
+
+When your tool accepts file paths from the LLM, use `IPromptPathRepresentationService` to resolve and normalize them. The LLM may pass paths in different formats depending on context; this service handles the translation.
+
+```typescript
+constructor(@IPromptPathRepresentationService private readonly pathService: IPromptPathRepresentationService) {}
+
+async invoke(options, token) {
+  const resolved = this.pathService.toAbsolutePath(options.input.filePath);
+  // ...
+}
+```
+
+## Error handling
+
+If something goes wrong inside `invoke()`, throw an `Error` with a message that makes sense **to the model**, not just to a developer reading logs. The agent loop catches thrown errors and feeds the error message back to the model as a tool result. The message should tell the model what went wrong and what it should try next.
+
+```typescript
+throw new Error(
+  `Could not read file "${options.input.filePath}": the file does not exist. ` +
+  `Try listing the directory contents first to find the correct path.`
+);
+```
+
+## Tool confirmations
+
+If your tool has a potentially dangerous or irreversible side effect, it **must** ask for user confirmation before executing. Return `confirmationMessages` from `prepareInvocation()`:
+
+```typescript
+async prepareInvocation(options, token) {
+  return {
+    invocationMessage: new vscode.MarkdownString('Running command...'),
+    confirmationMessages: {
+      title: 'Run terminal command?',
+      message: new vscode.MarkdownString(
+        `This will run the following command in your terminal:\n\n` +
+        `\`\`\`\n${options.input.command}\n\`\`\``
+      ),
+    },
+  };
+}
+```
+
+Provide enough context in the confirmation message for the user to understand the risk without needing to understand the underlying API.
+
+## UI polish
+
+A well-implemented tool keeps the user informed throughout its lifecycle. Use these fields to control what appears in the chat UI:
+
+<AccordionGroup>
+  <Accordion title="invocationMessage and pastTenseMessage">
+    Set these in the object returned from `prepareInvocation()`. `invocationMessage` is shown while the tool is running; `pastTenseMessage` is shown after it completes. Do not add trailing ellipsis (`...`) — VS Code adds that automatically during execution.
+
+    ```typescript
+    return {
+      invocationMessage: new vscode.MarkdownString('Searching files'),
+      pastTenseMessage: new vscode.MarkdownString('Searched files'),
+    };
+    ```
+  </Accordion>
+
+  <Accordion title="toolResultMessage">
+    Use `ExtendedLanguageModelToolResult.toolResultMessage` when you want the tool message to reflect the actual result of the invocation (rather than a static string). Pass a `MarkdownString`, optionally using `formatUriForFileWidget` to render a clickable file widget.
+  </Accordion>
+
+  <Accordion title="toolResultDetails for expandable file lists">
+    Setting `toolResultDetails` on the result turns the tool message into an expandable list of URIs, which is ideal for tools like file search or text search that return multiple file references.
+
+    ```typescript
+    return new ExtendedLanguageModelToolResult(
+      [new vscode.LanguageModelTextPart(resultText)],
+      { toolResultDetails: matchedUris }
+    );
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Model-specific tools
+
+When a tool should only be available for certain language models — or when a model requires a different tool description or behavior — use `ToolRegistry.registerModelSpecificTool`:
+
+```typescript
+class MyGeminiTool implements ICopilotModelSpecificTool<IMyToolInput> {
+  async invoke(
+    options: vscode.LanguageModelToolInvocationOptions<IMyToolInput>,
+    token: vscode.CancellationToken
+  ): Promise<vscode.LanguageModelToolResult> {
+    return { content: [{ type: 'text', value: 'Result' }] };
+  }
+}
+
+const disposable = ToolRegistry.registerModelSpecificTool(
+  {
+    name: 'my_gemini_tool',
+    displayName: 'My Gemini Tool',
+    description: 'A tool optimized for Gemini models',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The query to process' }
+      },
+      required: ['query']
+    },
+    models: [{ family: 'gemini-3-pro' }]
+  },
+  MyGeminiTool
+);
+```
+
+To replace an existing tool for specific models, set the `overridesTool` property on your implementation class. When `overridesTool` is set, the model-specific tool is not individually selectable in the UI; it automatically substitutes the base tool when the model matches.
+
+## Testing
+
+Write a unit test for your tool following the pattern in `readFile.spec.tsx`. A typical test invokes the tool with hardcoded arguments and compares the result against a snapshot:
+
+```typescript
+it('reads a file', async () => {
+  const tool = instantiationService.createInstance(MyTool);
+  const result = await tool.invoke(
+    {
+      input: { filePath: '/absolute/path/to/fixture.ts' },
+      toolInvocationToken: undefined,
+    },
+    CancellationToken.None
+  );
+  expect(result).toMatchSnapshot();
+});
+```
+
+Run unit tests with `npm run test:unit`. If your tool is relevant in simulator or SWE-bench scenarios, verify it works there too.
+
+<Tip>
+  After implementing your tool, run the extension and use it in a real agent session. Open the **Show Chat Debug View** command and read the prompt from top to bottom. Does your tool result make sense in context? Is it formatted consistently with surrounding messages? Reading the prompt is the most reliable way to catch issues before they reach users.
+</Tip>

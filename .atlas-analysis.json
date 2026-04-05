@@ -1,0 +1,105 @@
+{
+  "projectType": "saas",
+  "projectName": "GitHub Copilot Chat",
+  "projectDescription": "AI-powered chat and coding assistant extension for Visual Studio Code, featuring autonomous agent mode, inline suggestions, and deep IDE integration.",
+  "theme": "luma",
+  "primaryColor": "#218ecc",
+  "lightColor": "#ebf7f8",
+  "darkColor": "#7c98b0",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/chat",
+              "features/agent-mode",
+              "features/inline-suggestions",
+              "features/inline-chat"
+            ]
+          },
+          {
+            "group": "Customization",
+            "pages": [
+              "customization/custom-instructions",
+              "customization/mcp-servers",
+              "customization/agent-skills",
+              "customization/custom-agents"
+            ]
+          },
+          {
+            "group": "Tools Reference",
+            "pages": [
+              "tools/overview",
+              "tools/built-in-tools",
+              "tools/model-specific-tools"
+            ]
+          },
+          {
+            "group": "Privacy & Support",
+            "pages": [
+              "privacy",
+              "faq"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Contributing",
+        "groups": [
+          {
+            "group": "Development Setup",
+            "pages": [
+              "contributing/getting-started",
+              "contributing/architecture",
+              "contributing/testing"
+            ]
+          },
+          {
+            "group": "Building Features",
+            "pages": [
+              "contributing/prompts",
+              "contributing/tools",
+              "contributing/agent-mode",
+              "contributing/api-updates"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Autonomous agent mode that plans, edits files, runs commands, and self-corrects",
+    "Inline AI suggestions with ghost text and next edit suggestions (NES)",
+    "Inline chat for targeted, context-aware edits inside the editor",
+    "Multi-session agent management with parallel session support",
+    "MCP (Model Context Protocol) server integration for external tools and data",
+    "Custom instructions and project-level AI context configuration",
+    "Chat participants and custom agents via VS Code extension API",
+    "Support for all major programming languages",
+    "TSX-based prompt composition framework with token budget management",
+    "Cloud agent delegation for creating branches and opening pull requests"
+  ],
+  "publicApiSurface": [
+    "vscode.LanguageModelTool — interface for implementing custom tools",
+    "ICopilotTool — extended tool interface with additional Copilot capabilities",
+    "ToolRegistry.registerTool() — register a tool with the agent",
+    "ToolRegistry.registerModelSpecificTool() — register a model-specific tool override",
+    "PromptElement / PromptRenderer — TSX-based prompt composition system",
+    "contributes.languageModelTools — package.json contribution point for tools",
+    "contributes.languageModelToolSets — package.json contribution point for tool sets",
+    "vscode.lm.invokeTool() — VS Code API to invoke a registered language model tool",
+    "IIntentInvocation.buildPrompt() — interface for building intent prompts",
+    "chatParticipants (chat participants API) — register @workspace, @vscode, and custom agents"
+  ]
+}

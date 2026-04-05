@@ -1,0 +1,159 @@
+---
+title: "Custom agents"
+description: "Define specialized AI personas with focused capabilities for specific workflows."
+---
+
+Custom agents are chat participants that you or your team build using the VS Code extension API. Each agent has its own identity, system prompt, set of allowed tools, and optional handoff configuration. Instead of relying on a general-purpose assistant, you can create a focused agent that behaves consistently for a specific task — code review, planning, documentation generation, or anything else your workflow demands.
+
+## Built-in agents
+
+Copilot ships with two built-in agents that you can invoke from the chat panel by prefixing your message with `@`:
+
+| Agent | Purpose |
+|---|---|
+| `@workspace` | Answers questions about your codebase, searches across files, and provides context-aware suggestions scoped to the open workspace. |
+| `@vscode` | Helps with VS Code itself — settings, keybindings, extensions, and editor configuration. |
+
+Custom agents you build or install work the same way: you invoke them with `@agentname` in the chat panel.
+
+## Difference between custom agents and MCP servers
+
+Custom agents and MCP servers both extend Copilot, but they serve different purposes:
+
+- **Custom agents** define a persona — a specific system prompt, a curated tool set, and a consistent interaction style. The agent controls *how* Copilot behaves.
+- **MCP servers** provide tools — external capabilities that any agent (including built-in ones) can invoke. The server controls *what* Copilot can do.
+
+You can combine them: a custom agent can be configured to use tools from an MCP server.
+
+## Creating a custom agent
+
+Custom agents are contributed through a VS Code extension using the `contributes.chatParticipants` contribution point in the extension's `package.json`.
+
+<Steps>
+  <Step title="Declare the participant in package.json">
+    Add a `chatParticipants` entry under `contributes`:
+
+    ```json
+    "contributes": {
+      "chatParticipants": [
+        {
+          "id": "my-extension.myagent",
+          "name": "myagent",
+          "description": "A specialized agent for my workflow",
+          "isSticky": true
+        }
+      ]
+    }
+    ```
+
+    - `id` — unique identifier, scoped to your extension.
+    - `name` — the handle users type after `@` (no spaces).
+    - `description` — shown in the chat panel when the agent is selected.
+    - `isSticky` — when `true`, the agent stays selected across chat turns instead of reverting to the default.
+  </Step>
+  <Step title="Register a request handler in your extension">
+    In your extension's activation function, register a handler that receives chat requests and produces a response:
+
+    ```typescript
+    const participant = vscode.chat.createChatParticipant(
+      'my-extension.myagent',
+      async (request, context, response, token) => {
+        const systemPrompt = `You are a specialized code review agent.
+    Focus on correctness, performance, and adherence to project conventions.
+    Be concise and actionable in your feedback.`;
+
+        const messages = [
+          vscode.LanguageModelChatMessage.User(request.prompt)
+        ];
+
+        const model = await request.model;
+        const result = await model.sendRequest(messages, {
+          systemPrompt
+        }, token);
+
+        for await (const chunk of result.text) {
+          response.markdown(chunk);
+        }
+      }
+    );
+
+    context.subscriptions.push(participant);
+    ```
+  </Step>
+  <Step title="Package and install the extension">
+    Build your extension with `vsce package` and install the resulting `.vsix` file, or publish it to the VS Code Marketplace for your team to install.
+  </Step>
+</Steps>
+
+## Using a custom agent in chat
+
+Once your extension is installed and active, invoke the agent by typing `@` followed by the agent's name in the Copilot Chat panel:
+
+```
+@myagent Review the changes in this file for potential memory leaks.
+```
+
+The agent receives your message, applies its system prompt and tool configuration, and streams a response back into the chat panel. Commands specific to the agent (defined as `commands` in the manifest) appear in the slash-command suggestions when you type `/` while the agent is active.
+
+## Defining agent commands
+
+Agents can expose slash commands that appear as suggestions in the chat input. Add them to the `commands` array in your `package.json`:
+
+```json
+"contributes": {
+  "chatParticipants": [
+    {
+      "id": "my-extension.myagent",
+      "name": "myagent",
+      "description": "A specialized agent for my workflow",
+      "isSticky": true,
+      "commands": [
+        {
+          "name": "review",
+          "description": "Review the current file for issues"
+        },
+        {
+          "name": "summarize",
+          "description": "Summarize recent changes in the workspace"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Users invoke them with `@myagent /review` or `@myagent /summarize`.
+
+## Using prompt files to define lightweight agents
+
+If you do not want to build a full VS Code extension, you can create a lightweight custom agent using a `.agent.md` prompt file in your workspace. These files use a YAML front matter header to configure the agent's behavior:
+
+```markdown
+---
+description: This custom agent researches and plans new features for VS Code extensions.
+model: GPT-4.1
+tools: [read, search, web]
+handoffs:
+  - label: Start Implementation
+    agent: agent
+    prompt: Implement the plan
+    send: true
+    model: GPT-4.1 (copilot)
+---
+
+First come up with a plan for the new feature. Write a todo list of tasks to complete the feature.
+```
+
+Front matter fields for `.agent.md` files:
+
+| Field | Description |
+|---|---|
+| `description` | Shown in the agent picker; describes what the agent does. |
+| `model` | The language model to use (e.g., `GPT-4.1`, `GPT-4o`). |
+| `tools` | Array of tool names the agent is allowed to use. |
+| `target` | Deployment target: `vscode` or `github-copilot`. |
+| `handoffs` | Sequence of handoff configurations for passing context to another agent after completion. |
+
+<Note>
+  Custom agents built via the VS Code extension API require a VS Code extension to be installed and active. Prompt-file-based agents are available to anyone who opens the workspace, with no extension required.
+</Note>
